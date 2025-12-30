@@ -3,11 +3,11 @@
   "displayName": "Code Pilot AI",
   "description": "Intelligent AI-powered coding assistant with chat interface for VS Code",
   "version": "1.0.0",
-  "publisher": "YourPublisherName",
-  "author": "Your Name",
+  "publisher": "Damilola",
+  "author": "Damilola Onadeinde",
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "https://github.com/dammyboss/code-pilot-ai"
   },
   "license": "MIT",
   "engines": {
