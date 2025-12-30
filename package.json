@@ -1,0 +1,279 @@
+{
+  "name": "code-pilot-ai",
+  "displayName": "Code Pilot AI",
+  "description": "Intelligent AI-powered coding assistant with chat interface for VS Code",
+  "version": "1.0.0",
+  "publisher": "YourPublisherName",
+  "author": "Your Name",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.94.0"
+  },
+  "categories": [
+    "Other",
+    "AI",
+    "Chat",
+    "Machine Learning",
+    "Programming Languages",
+    "Education"
+  ],
+  "keywords": [
+    "ai assistant",
+    "code helper",
+    "programming assistant",
+    "ai chat",
+    "code pilot",
+    "developer tools",
+    "coding assistant",
+    "intelligent coding",
+    "ai programming",
+    "productivity"
+  ],
+  "icon": "icon.png",
+  "main": "./out/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "code-pilot-ai.openChat",
+        "title": "Open Code Pilot AI",
+        "category": "Code Pilot AI",
+        "icon": "icon.png"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "code-pilot-ai.openChat",
+        "key": "ctrl+shift+p",
+        "mac": "cmd+shift+p"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "code-pilot-ai.openChat"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "code-pilot-ai.openChat",
+          "group": "pilot@1",
+          "when": "editorTextFocus"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "code-pilot-ai.openChat",
+          "group": "navigation@1",
+          "when": "true"
+        }
+      ],
+      "editor/title/context": [
+        {
+          "command": "code-pilot-ai.openChat",
+          "group": "pilot@1"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "code-pilot-ai.openChat",
+          "group": "pilot@1"
+        }
+      ],
+      "scm/title": [
+        {
+          "command": "code-pilot-ai.openChat",
+          "group": "navigation@1",
+          "when": "true"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "code-pilot-ai.openChat",
+          "group": "navigation@1",
+          "when": "view == workbench.explorer.fileView"
+        }
+      ],
+      "touchBar": [
+        {
+          "command": "code-pilot-ai.openChat",
+          "group": "editing",
+          "when": "true"
+        }
+      ],
+      "menuBar/file": [
+        {
+          "command": "code-pilot-ai.openChat",
+          "group": "1_new@1"
+        }
+      ]
+    },
+    "views": {
+      "code-pilot-ai": [
+        {
+          "id": "code-pilot-ai.chat",
+          "type": "webview",
+          "name": "Code Pilot AI",
+          "when": "true",
+          "icon": "icon.png",
+          "contextualTitle": "Code Pilot AI"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "code-pilot-ai",
+          "title": "Code Pilot AI",
+          "icon": "icon.png"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Code Pilot AI",
+      "properties": {
+        "codePilotAI.wsl.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable WSL integration for running the AI backend"
+        },
+        "codePilotAI.wsl.distro": {
+          "type": "string",
+          "default": "Ubuntu",
+          "description": "WSL distribution name (e.g., Ubuntu, Debian)"
+        },
+        "codePilotAI.wsl.nodePath": {
+          "type": "string",
+          "default": "/usr/bin/node",
+          "description": "Path to Node.js in the WSL distribution"
+        },
+        "codePilotAI.wsl.backendPath": {
+          "type": "string",
+          "default": "/usr/local/bin/claude",
+          "description": "Path to AI backend executable in the WSL distribution"
+        },
+        "codePilotAI.reasoning.depth": {
+          "type": "string",
+          "enum": [
+            "standard",
+            "detailed",
+            "comprehensive",
+            "maximum"
+          ],
+          "default": "standard",
+          "description": "Reasoning depth level. Higher levels provide more detailed analysis but consume more tokens."
+        },
+        "codePilotAI.permissions.autoApprove": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable Auto-Approve Mode to skip permission checks. Use with caution as the AI can execute commands without confirmation."
+        },
+        "codePilotAI.provider": {
+          "type": "string",
+          "enum": ["anthropic", "azure", "deepseek"],
+          "default": "anthropic",
+          "description": "AI provider to use (Anthropic Claude, Azure OpenAI, or DeepSeek)"
+        },
+        "codePilotAI.anthropic.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Anthropic API key for Claude models"
+        },
+        "codePilotAI.anthropic.model": {
+          "type": "string",
+          "enum": [
+            "claude-sonnet-4-20250514",
+            "claude-opus-4-20250514",
+            "claude-3-5-sonnet-20241022",
+            "claude-3-5-haiku-20241022"
+          ],
+          "default": "claude-sonnet-4-20250514",
+          "description": "Claude model to use"
+        },
+        "codePilotAI.azure.endpoint": {
+          "type": "string",
+          "default": "",
+          "description": "Azure OpenAI endpoint URL"
+        },
+        "codePilotAI.azure.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Azure OpenAI API key"
+        },
+        "codePilotAI.azure.deployment": {
+          "type": "string",
+          "default": "",
+          "description": "Azure OpenAI deployment name"
+        },
+        "codePilotAI.azure.apiVersion": {
+          "type": "string",
+          "default": "2024-02-15-preview",
+          "description": "Azure OpenAI API version"
+        },
+        "codePilotAI.permissions.yoloMode": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable YOLO mode to auto-approve all tool requests without confirmation"
+        },
+        "codePilotAI.thinking.intensity": {
+          "type": "string",
+          "enum": ["think", "think-hard", "think-harder", "ultrathink"],
+          "default": "think",
+          "description": "Thinking intensity for extended reasoning"
+        },
+        "codePilotAI.wsl.claudePath": {
+          "type": "string",
+          "default": "/usr/local/bin/claude",
+          "description": "Path to Claude CLI in WSL (legacy, use wsl.backendPath)"
+        },
+        "codePilotAI.azure.model": {
+          "type": "string",
+          "enum": ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-4", "gpt-35-turbo"],
+          "default": "gpt-4o",
+          "description": "Azure OpenAI model to use"
+        },
+        "codePilotAI.deepseek.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "DeepSeek API key"
+        },
+        "codePilotAI.deepseek.model": {
+          "type": "string",
+          "enum": ["deepseek-chat", "deepseek-coder", "deepseek-reasoner"],
+          "default": "deepseek-chat",
+          "description": "DeepSeek model to use"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "dependencies": {
+    "glob": "^10.3.10"
+  },
+  "devDependencies": {
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "20.x",
+    "@types/vscode": "^1.94.0",
+    "@typescript-eslint/eslint-plugin": "^8.31.1",
+    "@typescript-eslint/parser": "^8.31.1",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.5.2",
+    "@vscode/vsce": "^3.5.0",
+    "eslint": "^9.25.1",
+    "typescript": "^5.8.3"
+  }
+}
