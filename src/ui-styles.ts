@@ -360,10 +360,8 @@ const styles = `
     }
 
     .permission-tool {
-        background-color: var(--vscode-badge-background);
-        color: var(--vscode-badge-foreground);
-        padding: 3px 6px;
-        border-radius: 3px;
+        padding: 3px 8px;
+        border-radius: 4px;
         font-size: 10px;
         font-weight: 600;
         text-transform: uppercase;
@@ -373,6 +371,51 @@ const styles = `
         display: inline-flex;
         align-items: center;
         line-height: 1;
+        /* Default colors */
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        color: #ffffff;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Colorful tool-specific badges */
+    .permission-tool[data-tool="Bash"] {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    }
+
+    .permission-tool[data-tool="Grep"] {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    }
+
+    .permission-tool[data-tool="Read"] {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    }
+
+    .permission-tool[data-tool="Edit"] {
+        background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+    }
+
+    .permission-tool[data-tool="Write"] {
+        background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    }
+
+    .permission-tool[data-tool="MultiEdit"] {
+        background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+    }
+
+    .permission-tool[data-tool="Glob"] {
+        background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+    }
+
+    .permission-tool[data-tool="LS"] {
+        background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+    }
+
+    .permission-tool[data-tool="WebSearch"] {
+        background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    }
+
+    .permission-tool[data-tool="WebFetch"] {
+        background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
     }
 
     .permission-command {
@@ -770,6 +813,91 @@ const styles = `
         font-weight: 500;
         text-transform: uppercase;
         letter-spacing: 0.5px;
+    }
+
+    /* Modern Error Card Styles */
+    .message.error-card {
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(239, 68, 68, 0.03) 100%);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        border-radius: 12px;
+        padding: 0;
+        margin: 12px;
+        max-width: calc(100% - 24px);
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(239, 68, 68, 0.1);
+    }
+
+    .error-card-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 16px;
+        background: rgba(239, 68, 68, 0.1);
+        border-bottom: 1px solid rgba(239, 68, 68, 0.15);
+    }
+
+    .error-icon-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        background: rgba(239, 68, 68, 0.15);
+        border-radius: 8px;
+        color: #ef4444;
+    }
+
+    .error-label {
+        flex: 1;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #ef4444;
+    }
+
+    .error-copy-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        background: transparent;
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        border-radius: 6px;
+        color: rgba(239, 68, 68, 0.7);
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .error-copy-btn:hover {
+        background: rgba(239, 68, 68, 0.1);
+        color: #ef4444;
+        border-color: rgba(239, 68, 68, 0.4);
+    }
+
+    .error-card-content {
+        padding: 16px;
+        font-size: 13px;
+        line-height: 1.6;
+        color: var(--vscode-foreground);
+    }
+
+    .error-card-content p {
+        margin: 0 0 8px 0;
+    }
+
+    .error-card-content p:last-child {
+        margin-bottom: 0;
+    }
+
+    .error-card-content pre {
+        background: rgba(0, 0, 0, 0.2);
+        padding: 12px;
+        border-radius: 6px;
+        overflow-x: auto;
+        font-size: 12px;
+        margin: 8px 0;
     }
 
     .message.system {
@@ -1354,12 +1482,69 @@ const styles = `
         position: relative;
     }
 
+    /* Slash Commands Popup */
+    .slash-commands-popup {
+        position: absolute;
+        bottom: 100%;
+        left: 10px;
+        background: var(--vscode-dropdown-background);
+        border: 1px solid var(--vscode-dropdown-border);
+        border-radius: 6px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        z-index: 1000;
+        min-width: 240px;
+        margin-bottom: 8px;
+    }
+
+    .slash-popup-content {
+        padding: 6px;
+    }
+
+    .slash-command-item {
+        display: flex;
+        align-items: center;
+        padding: 10px 12px;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: background-color 0.15s ease;
+    }
+
+    .slash-command-item:hover {
+        background-color: var(--vscode-list-hoverBackground);
+    }
+
+    .slash-command-item:hover .slash-command-icon {
+        color: var(--vscode-foreground);
+    }
+
+    .slash-command-icon {
+        flex-shrink: 0;
+        transition: color 0.15s ease;
+    }
+
+    .slash-command-content {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .slash-command-title {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--vscode-foreground);
+    }
+
+    .slash-command-description {
+        font-size: 12px;
+        color: var(--vscode-descriptionForeground);
+    }
+
     .input-modes {
         display: flex;
         gap: 16px;
         align-items: center;
         padding-bottom: 5px;
-        font-size: 9.5px;
+        font-size: 12px;
     }
 
     .mode-toggle {
@@ -2672,10 +2857,42 @@ const styles = `
         border-radius: 6px;
         cursor: pointer;
         background-color: var(--vscode-list-inactiveSelectionBackground);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        position: relative;
     }
 
     .conversation-item:hover {
         background-color: var(--vscode-list-hoverBackground);
+    }
+
+    .conversation-item:hover .conversation-delete-btn {
+        opacity: 1;
+    }
+
+    .conversation-content {
+        cursor: pointer;
+    }
+
+    .conversation-delete-btn {
+        opacity: 0;
+        background: none;
+        border: none;
+        color: var(--vscode-descriptionForeground);
+        cursor: pointer;
+        padding: 6px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: opacity 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+        flex-shrink: 0;
+    }
+
+    .conversation-delete-btn:hover {
+        background-color: rgba(231, 76, 60, 0.15);
+        color: #e74c3c;
     }
 
     .conversation-title {
@@ -2693,6 +2910,145 @@ const styles = `
         font-size: 11px;
         color: var(--vscode-descriptionForeground);
         opacity: 0.8;
+    }
+
+    /* Help content styling */
+    .message.help-content {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%);
+        border: 1px solid rgba(99, 102, 241, 0.25);
+        border-radius: 10px;
+        padding: 20px;
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+
+    .message.help-content .help-message {
+        font-size: 13px;
+        line-height: 1.6;
+    }
+
+    .message.help-content h1 {
+        font-size: 20px;
+        margin: 0 0 16px 0;
+        color: var(--vscode-foreground);
+        font-weight: 600;
+        padding-bottom: 8px;
+        border-bottom: 2px solid rgba(99, 102, 241, 0.3);
+    }
+
+    .message.help-content h2 {
+        font-size: 16px;
+        margin: 20px 0 10px 0;
+        color: var(--vscode-foreground);
+        font-weight: 600;
+        border-bottom: 1px solid var(--vscode-widget-border);
+        padding-bottom: 6px;
+    }
+
+    .message.help-content h3 {
+        font-size: 14px;
+        margin: 16px 0 8px 0;
+        color: var(--vscode-foreground);
+        font-weight: 500;
+    }
+
+    .message.help-content ul,
+    .message.help-content ol {
+        margin: 10px 0;
+        padding-left: 24px;
+    }
+
+    .message.help-content li {
+        margin: 6px 0;
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    .message.help-content p {
+        margin: 10px 0;
+        font-size: 13px;
+        line-height: 1.6;
+    }
+
+    .message.help-content strong {
+        color: var(--vscode-foreground);
+        font-weight: 600;
+    }
+
+    .message.help-content code {
+        background-color: rgba(0, 0, 0, 0.2);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: var(--vscode-editor-font-family);
+        font-size: 12px;
+    }
+
+    .message.help-content blockquote,
+    .message.help-content .blockquote {
+        border-left: 3px solid rgba(99, 102, 241, 0.5);
+        margin: 12px 0;
+        padding: 8px 16px;
+        background-color: rgba(0, 0, 0, 0.1);
+        border-radius: 0 6px 6px 0;
+        font-style: italic;
+    }
+
+    .message.help-content hr {
+        border: none;
+        border-top: 1px solid var(--vscode-widget-border);
+        margin: 16px 0;
+    }
+
+    .message.help-content a {
+        color: var(--vscode-textLink-foreground);
+        text-decoration: none;
+    }
+
+    .message.help-content a:hover {
+        text-decoration: underline;
+    }
+
+    .message.help-content .code-block-container {
+        margin: 12px 0;
+        border-radius: 6px;
+        overflow: hidden;
+    }
+
+    .message.help-content .markdown-table-container {
+        margin: 12px 0;
+        overflow-x: auto;
+    }
+
+    .message.help-content .markdown-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+    }
+
+    .message.help-content .markdown-table th,
+    .message.help-content .markdown-table td {
+        padding: 8px 12px;
+        border: 1px solid var(--vscode-widget-border);
+        text-align: left;
+    }
+
+    .message.help-content .markdown-table th {
+        background-color: rgba(0, 0, 0, 0.15);
+        font-weight: 600;
+    }
+
+    .message.help-content .markdown-table tr:nth-child(even) {
+        background-color: rgba(0, 0, 0, 0.05);
+    }
+
+    /* Hide badge images in help content */
+    .message.help-content img[src*="badge"],
+    .message.help-content img[src*="shields.io"] {
+        display: none;
+    }
+
+    .message.help-content > p:first-child img {
+        display: none;
     }
 
     /* Tool loading animation */

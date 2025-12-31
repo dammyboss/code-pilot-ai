@@ -61,42 +61,90 @@ const html = `<!DOCTYPE html>
 		</div>
 		
 		<div class="input-container" id="inputContainer">
+			<!-- Slash Commands Popup (positioned above input) -->
+			<div id="slashCommandsPopup" class="slash-commands-popup" style="display: none;">
+				<div class="slash-popup-header" style="padding: 8px 12px; font-size: 11px; color: var(--vscode-descriptionForeground); border-bottom: 1px solid var(--vscode-widget-border);">Quick Actions</div>
+				<div class="slash-popup-content">
+					<div class="slash-command-item" onclick="executeSlashCommand('help')" style="padding: 8px 12px;">
+						<div class="slash-command-icon" style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; margin-right: 10px; color: var(--vscode-descriptionForeground);">
+							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<circle cx="12" cy="12" r="10"/>
+								<path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+								<line x1="12" y1="17" x2="12.01" y2="17"/>
+							</svg>
+						</div>
+						<div class="slash-command-content">
+							<div class="slash-command-title" style="font-size: 13px;">/help</div>
+							<div class="slash-command-description" style="font-size: 12px;">Learn more about Code Pilot AI</div>
+						</div>
+					</div>
+					<div class="slash-command-item" onclick="executeSlashCommand('clear')" style="padding: 8px 12px;">
+						<div class="slash-command-icon" style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; margin-right: 10px; color: var(--vscode-descriptionForeground);">
+							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<polyline points="3 6 5 6 21 6"/>
+								<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+							</svg>
+						</div>
+						<div class="slash-command-content">
+							<div class="slash-command-title" style="font-size: 13px;">/clear</div>
+							<div class="slash-command-description" style="font-size: 12px;">Clear this session</div>
+						</div>
+					</div>
+					<div class="slash-command-item" onclick="executeSlashCommand('compact')" style="padding: 8px 12px;">
+						<div class="slash-command-icon" style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; margin-right: 10px; color: var(--vscode-descriptionForeground);">
+							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+								<line x1="9" y1="3" x2="9" y2="21"/>
+							</svg>
+						</div>
+						<div class="slash-command-content">
+							<div class="slash-command-title" style="font-size: 13px;">/compact</div>
+							<div class="slash-command-description" style="font-size: 12px;">Compact this conversation</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
 			<div class="input-modes">
 				<div class="mode-toggle">
-					<span onclick="togglePlanMode()">Plan First</span>
+					<span onclick="togglePlanMode()" style="font-size: 13px;">Plan First</span>
 					<div class="mode-switch" id="planModeSwitch" onclick="togglePlanMode()"></div>
 				</div>
 				<div class="mode-toggle">
-					<span id="thinkingModeLabel" onclick="toggleThinkingMode()">Thinking Mode</span>
+					<span id="thinkingModeLabel" onclick="toggleThinkingMode()" style="font-size: 13px;">Thinking Mode</span>
 					<div class="mode-switch" id="thinkingModeSwitch" onclick="toggleThinkingMode()"></div>
 				</div>
 			</div>
 			<div class="textarea-container">
 				<div class="textarea-wrapper">
-					<textarea class="input-field" id="messageInput" placeholder="Type your message..." rows="1"></textarea>
+					<textarea class="input-field" id="messageInput" placeholder="Type your message..." rows="1" style="font-size: 14px;"></textarea>
 					<div class="input-controls">
 						<div class="left-controls">
-							<button class="tools-btn" onclick="showMCPModal()" title="Configure MCP servers" style="font-size: 10px; padding: 2px 6px;">
+							<button class="tools-btn" onclick="showMCPModal()" title="Configure MCP servers" style="font-size: 12px; padding: 3px 8px;">
 								MCP
-								<svg width="6" height="6" viewBox="0 0 8 8" fill="currentColor">
+								<svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor">
 									<path d="M1 2.5l3 3 3-3"></path>
 								</svg>
 							</button>
-							<select id="modelSelector" class="model-selector" onchange="onModelSelectorChange()" title="Select model">
+							<select id="modelSelector" class="model-selector" onchange="onModelSelectorChange()" title="Select model" style="font-size: 12px;">
 								<option value="claude-sonnet-4-20250514">Claude Sonnet 4</option>
 								<option value="claude-opus-4-20250514">Claude Opus 4</option>
 								<option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
 								<option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku</option>
 							</select>
+							<div class="agentic-toggle" style="display: flex; align-items: center; gap: 4px; margin-left: 8px;">
+								<span style="font-size: 12px; color: var(--vscode-descriptionForeground);">Agentic</span>
+								<div class="mode-switch" id="agenticModeSwitch" onclick="toggleAgenticMode()"></div>
+							</div>
 						</div>
 						<div class="right-controls">
-							<button class="slash-btn" onclick="showSlashCommandsModal()" title="Slash commands">/</button>
-							<button class="at-btn" onclick="showFilePicker()" title="Reference files">@</button>
+							<button class="slash-btn" onclick="showSlashCommandsPopup()" title="Quick actions" style="font-size: 14px;">/</button>
+							<button class="at-btn" onclick="showFilePicker()" title="Reference files" style="font-size: 14px;">@</button>
 							<button class="image-btn" id="imageBtn" onclick="selectImage()" title="Attach images">
 							<svg
 								xmlns="http://www.w3.org/2000/svg"
 								viewBox="0 0 16 16"
-								width="14"
+								width="16"
 								height="16"
 								>
 								<g fill="currentColor">
@@ -105,14 +153,14 @@ const html = `<!DOCTYPE html>
 								</g>
 							</svg>
 							</button>
-							<button class="send-btn" id="sendBtn" onclick="sendMessage()">
+							<button class="send-btn" id="sendBtn" onclick="sendMessage()" style="font-size: 13px;">
 							<div>
 							<span>Send </span>
 							   <svg
 								xmlns="http://www.w3.org/2000/svg"
 								viewBox="0 0 24 24"
-								width="11"
-								height="11"
+								width="12"
+								height="12"
 								>
 								<path
 									fill="currentColor"
@@ -426,69 +474,6 @@ const html = `<!DOCTYPE html>
 		</div>
 	</div>
 
-	<!-- Slash commands modal -->
-	<div id="slashCommandsModal" class="tools-modal" style="display: none;">
-		<div class="tools-modal-content" style="width: 320px; max-height: 400px;">
-			<div class="tools-modal-header" style="padding: 8px 12px;">
-				<span style="font-size: 12px;">Commands</span>
-				<button class="tools-close-btn" onclick="hideSlashCommandsModal()" style="font-size: 12px;">✕</button>
-			</div>
-			<div class="tools-modal-body" style="padding: 8px; max-height: 340px; overflow-y: auto;">
-
-			<!-- Quick Commands -->
-			<div class="slash-commands-list" id="promptSnippetsList" style="font-size: 11px;">
-				<div class="slash-command-item prompt-snippet-item" onclick="usePromptSnippet('explain')" style="padding: 6px 8px;">
-					<div class="slash-command-content">
-						<div class="slash-command-title" style="font-size: 11px;">/explain</div>
-						<div class="slash-command-description" style="font-size: 10px;">Explain selected code</div>
-					</div>
-				</div>
-				<div class="slash-command-item prompt-snippet-item" onclick="usePromptSnippet('fix')" style="padding: 6px 8px;">
-					<div class="slash-command-content">
-						<div class="slash-command-title" style="font-size: 11px;">/fix</div>
-						<div class="slash-command-description" style="font-size: 10px;">Fix issues in code</div>
-					</div>
-				</div>
-				<div class="slash-command-item prompt-snippet-item" onclick="usePromptSnippet('refactor')" style="padding: 6px 8px;">
-					<div class="slash-command-content">
-						<div class="slash-command-title" style="font-size: 11px;">/refactor</div>
-						<div class="slash-command-description" style="font-size: 10px;">Improve code structure</div>
-					</div>
-				</div>
-				<div class="slash-command-item prompt-snippet-item" onclick="usePromptSnippet('test')" style="padding: 6px 8px;">
-					<div class="slash-command-content">
-						<div class="slash-command-title" style="font-size: 11px;">/test</div>
-						<div class="slash-command-description" style="font-size: 10px;">Generate tests</div>
-					</div>
-				</div>
-				<div class="slash-command-item prompt-snippet-item" onclick="usePromptSnippet('review')" style="padding: 6px 8px;">
-					<div class="slash-command-content">
-						<div class="slash-command-title" style="font-size: 11px;">/review</div>
-						<div class="slash-command-description" style="font-size: 10px;">Code review</div>
-					</div>
-				</div>
-				<div class="slash-command-item" onclick="executeSlashCommand('clear')" style="padding: 6px 8px;">
-					<div class="slash-command-content">
-						<div class="slash-command-title" style="font-size: 11px;">/clear</div>
-						<div class="slash-command-description" style="font-size: 10px;">Clear conversation</div>
-					</div>
-				</div>
-				<div class="slash-command-item" onclick="executeSlashCommand('cost')" style="padding: 6px 8px;">
-					<div class="slash-command-content">
-						<div class="slash-command-title" style="font-size: 11px;">/cost</div>
-						<div class="slash-command-description" style="font-size: 10px;">Show token usage</div>
-					</div>
-				</div>
-				<div class="slash-command-item" onclick="executeSlashCommand('help')" style="padding: 6px 8px;">
-					<div class="slash-command-content">
-						<div class="slash-command-title" style="font-size: 11px;">/help</div>
-						<div class="slash-command-description" style="font-size: 10px;">Get help</div>
-					</div>
-				</div>
-			</div>
-			</div>
-		</div>
-	</div>
 
 	<script>
 		const vscode = acquireVsCodeApi();
@@ -507,8 +492,61 @@ const html = `<!DOCTYPE html>
 		let selectedFileIndex = -1;
 		let planModeEnabled = false;
 		let thinkingModeEnabled = false;
+		let agenticModeEnabled = true; // Default to ON
 		let currentProvider = 'anthropic';
 		let currentModel = 'claude-sonnet-4-20250514';
+
+		// Stub function for state saving (disabled)
+		function saveWebviewState() {
+			// State persistence disabled for now
+		}
+
+		// Agentic mode toggle function
+		function toggleAgenticMode() {
+			agenticModeEnabled = !agenticModeEnabled;
+			const switchEl = document.getElementById('agenticModeSwitch');
+			if (switchEl) {
+				switchEl.classList.toggle('active', agenticModeEnabled);
+			}
+
+			// Save preference to VS Code
+			vscode.postMessage({
+				type: 'updateSettings',
+				settings: {
+					'agentic.enabled': agenticModeEnabled
+				}
+			});
+		}
+
+		// Slash commands popup functions
+		function showSlashCommandsPopup() {
+			const popup = document.getElementById('slashCommandsPopup');
+			if (popup) {
+				popup.style.display = 'block';
+				// Focus the message input so user can continue typing
+				messageInput.focus();
+			}
+		}
+
+		function hideSlashCommandsPopup() {
+			const popup = document.getElementById('slashCommandsPopup');
+			if (popup) {
+				popup.style.display = 'none';
+			}
+		}
+
+		// Close popup when clicking outside (with delay to prevent immediate close)
+		document.addEventListener('click', function(event) {
+			const popup = document.getElementById('slashCommandsPopup');
+			const slashBtn = document.querySelector('.slash-btn');
+			const messageInputEl = document.getElementById('messageInput');
+			if (popup && popup.style.display === 'block') {
+				// Don't close if clicking inside popup, slash button, or message input
+				if (!popup.contains(event.target) && event.target !== slashBtn && event.target !== messageInputEl) {
+					popup.style.display = 'none';
+				}
+			}
+		});
 
 		// Provider and model selection - now controlled from settings modal only
 		function onProviderChange() {
@@ -558,26 +596,29 @@ const html = `<!DOCTYPE html>
 				copyBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>';
 				messageDiv.appendChild(copyBtn);
 			} else if (type === 'error') {
-				// Keep error header for visibility
-				const headerDiv = document.createElement('div');
-				headerDiv.className = 'message-header';
+				// Modern error card design
+				messageDiv.className = 'message error-card';
 
-				const iconDiv = document.createElement('div');
-				iconDiv.className = \`message-icon \${type}\`;
-				iconDiv.textContent = '⚠️';
+				// Error header with icon and label
+				const headerDiv = document.createElement('div');
+				headerDiv.className = 'error-card-header';
+
+				const iconContainer = document.createElement('div');
+				iconContainer.className = 'error-icon-container';
+				iconContainer.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
 
 				const labelDiv = document.createElement('div');
-				labelDiv.className = 'message-label';
-				labelDiv.textContent = 'Error';
+				labelDiv.className = 'error-label';
+				labelDiv.textContent = 'ERROR';
 
 				// Add copy button
 				const copyBtn = document.createElement('button');
-				copyBtn.className = 'copy-btn';
-				copyBtn.title = 'Copy message';
+				copyBtn.className = 'error-copy-btn';
+				copyBtn.title = 'Copy error message';
 				copyBtn.onclick = () => copyMessageContent(messageDiv);
-				copyBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>';
+				copyBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
 
-				headerDiv.appendChild(iconDiv);
+				headerDiv.appendChild(iconContainer);
 				headerDiv.appendChild(labelDiv);
 				headerDiv.appendChild(copyBtn);
 				messageDiv.appendChild(headerDiv);
@@ -585,10 +626,13 @@ const html = `<!DOCTYPE html>
 			
 			// Add content
 			const contentDiv = document.createElement('div');
-			contentDiv.className = 'message-content';
-			
+			contentDiv.className = type === 'error' ? 'error-card-content' : 'message-content';
+
 			if(type == 'user' || type === 'claude' || type === 'thinking'){
 				contentDiv.innerHTML = content;
+			} else if (type === 'error') {
+				// Format error content nicely
+				contentDiv.innerHTML = '<p>' + content.replace(/\\n/g, '</p><p>') + '</p>';
 			} else {
 				const preElement = document.createElement('pre');
 				preElement.textContent = content;
@@ -612,6 +656,9 @@ const html = `<!DOCTYPE html>
 			
 			messagesDiv.appendChild(messageDiv);
 			scrollToBottomIfNeeded(messagesDiv, shouldScroll);
+
+			// Save state to preserve messages when switching extensions
+			saveWebviewState();
 		}
 
 		// Streaming message handling
@@ -661,6 +708,8 @@ const html = `<!DOCTYPE html>
 				currentStreamingMessage.classList.remove('streaming');
 				currentStreamingMessage = null;
 				streamingContent = '';
+				// Save state to preserve messages when switching extensions
+				saveWebviewState();
 			}
 		}
 
@@ -743,6 +792,9 @@ const html = `<!DOCTYPE html>
 			
 			messagesDiv.appendChild(messageDiv);
 			scrollToBottomIfNeeded(messagesDiv, shouldScroll);
+
+			// Save state to preserve messages when switching extensions
+			saveWebviewState();
 		}
 
 		function createExpandableInput(toolInput, rawInput) {
@@ -865,6 +917,9 @@ const html = `<!DOCTYPE html>
 			
 			messagesDiv.appendChild(messageDiv);
 			scrollToBottomIfNeeded(messagesDiv, shouldScroll);
+
+			// Save state to preserve messages when switching extensions
+			saveWebviewState();
 		}
 
 		function formatToolInputUI(input) {
@@ -1479,6 +1534,13 @@ const html = `<!DOCTYPE html>
 			if (e.key === 'Enter' && !e.shiftKey) {
 				e.preventDefault();
 				sendMessage();
+			} else if (e.key === '/' && !e.ctrlKey && !e.metaKey && messageInput.value === '') {
+				// Show slash commands popup when typing / at the beginning
+				setTimeout(() => {
+					if (messageInput.value === '/') {
+						showSlashCommandsPopup();
+					}
+				}, 0);
 			} else if (e.key === '@' && !e.ctrlKey && !e.metaKey) {
 				// Don't prevent default, let @ be typed first
 				setTimeout(() => {
@@ -1487,6 +1549,9 @@ const html = `<!DOCTYPE html>
 			} else if (e.key === 'Escape' && filePickerModal.style.display === 'flex') {
 				e.preventDefault();
 				hideFilePicker();
+			} else if (e.key === 'Escape') {
+				// Also close slash popup on Escape
+				hideSlashCommandsPopup();
 			} else if (e.key === 'v' && (e.ctrlKey || e.metaKey)) {
 				// Handle Ctrl+V/Cmd+V explicitly in case paste event doesn't fire
 				// Don't prevent default - let browser handle it first
@@ -1993,13 +2058,13 @@ const html = `<!DOCTYPE html>
 			// Model modal removed, using dropdowns
 		}
 
-		// Slash commands modal functions
+		// Slash commands modal functions (for backward compatibility)
 		function showSlashCommandsModal() {
-			document.getElementById('slashCommandsModal').style.display = 'flex';
+			showSlashCommandsPopup();
 		}
 
 		function hideSlashCommandsModal() {
-			document.getElementById('slashCommandsModal').style.display = 'none';
+			hideSlashCommandsPopup();
 		}
 
 		// Thinking intensity modal functions
@@ -2102,20 +2167,76 @@ const html = `<!DOCTYPE html>
 		}
 
 		function executeSlashCommand(command) {
-			// Hide the modal
-			hideSlashCommandsModal();
-			
+			// Hide the popup
+			hideSlashCommandsPopup();
+
 			// Clear the input since user selected a command
 			messageInput.value = '';
-			
-			// Send command to VS Code to execute in terminal
-			vscode.postMessage({
-				type: 'executeSlashCommand',
-				command: command
-			});
-			
-			// Show user feedback
-			addMessage('user', \`Executing /\${command} command in terminal. Check the terminal output and return when ready.\`, 'assistant');
+
+			// Handle commands locally
+			switch (command) {
+				case 'help':
+					// Request README content from extension
+					vscode.postMessage({ type: 'showHelp' });
+					break;
+				case 'clear':
+					// Clear the chat messages locally
+					clearChat();
+					break;
+				case 'compact':
+					// Compact the chat (summarize/collapse old messages)
+					compactChat();
+					break;
+				default:
+					addMessage(\`Unknown command: /\${command}\`, 'system');
+			}
+		}
+
+		function clearChat() {
+			// Clear all messages from the UI
+			const messagesDiv = document.getElementById('messages');
+			messagesDiv.innerHTML = '';
+
+			// Reset totals
+			totalCost = 0;
+			totalTokensInput = 0;
+			totalTokensOutput = 0;
+			requestCount = 0;
+			updateStatusWithTotals();
+
+			// Notify extension to clear session
+			vscode.postMessage({ type: 'newSession' });
+
+			addMessage('Chat cleared. Starting fresh!', 'system');
+		}
+
+		function compactChat() {
+			// Get all message elements
+			const messagesDiv = document.getElementById('messages');
+			const messages = messagesDiv.querySelectorAll('.message');
+
+			if (messages.length <= 3) {
+				addMessage('Chat is already compact.', 'system');
+				return;
+			}
+
+			// Keep only the last 3 messages and add a summary note
+			const messagesToKeep = Array.from(messages).slice(-3);
+			const removedCount = messages.length - 3;
+
+			// Clear and rebuild
+			messagesDiv.innerHTML = '';
+
+			// Add compact notice
+			const compactNotice = document.createElement('div');
+			compactNotice.className = 'message system';
+			compactNotice.innerHTML = \`<div class="message-content">📦 \${removedCount} earlier message(s) compacted to save space.</div>\`;
+			messagesDiv.appendChild(compactNotice);
+
+			// Re-add kept messages
+			messagesToKeep.forEach(msg => messagesDiv.appendChild(msg));
+
+			addMessage('Chat compacted! Older messages have been removed from view.', 'system');
 		}
 
 		function handleCustomCommandKeydown(event) {
@@ -2292,9 +2413,39 @@ const html = `<!DOCTYPE html>
 			}
 		}
 
+		// Handle test connection results
+		function handleTestResult(provider, message) {
+			const providerMap = {
+				'anthropic': { resultId: 'anthropicTestResult', btnId: 'testAnthropicBtn' },
+				'azure': { resultId: 'azureTestResult', btnId: 'testAzureBtn' },
+				'deepseek': { resultId: 'deepseekTestResult', btnId: 'testDeepSeekBtn' }
+			};
+
+			const config = providerMap[provider];
+			if (!config) return;
+
+			const resultSpan = document.getElementById(config.resultId);
+			const testBtn = document.getElementById(config.btnId);
+
+			if (testBtn) testBtn.disabled = false;
+			if (!resultSpan) return;
+
+			if (message.success) {
+				resultSpan.textContent = 'Connected!';
+				resultSpan.className = 'test-result success';
+				setTimeout(() => {
+					resultSpan.textContent = '';
+					resultSpan.className = 'test-result';
+				}, 3000);
+			} else {
+				resultSpan.textContent = message.error || 'Connection failed';
+				resultSpan.className = 'test-result error';
+			}
+		}
+
 		window.addEventListener('message', event => {
 			const message = event.data;
-			
+
 			switch (message.type) {
 				case 'ready':
 					addMessage(message.data, 'system');
@@ -2560,6 +2711,9 @@ const html = `<!DOCTYPE html>
 				case 'conversationList':
 					displayConversationList(message.data);
 					break;
+				case 'helpContent':
+					displayHelpContent(message.data);
+					break;
 				case 'clipboardText':
 					handleClipboardText(message.data);
 					break;
@@ -2588,6 +2742,19 @@ const html = `<!DOCTYPE html>
 					break;
 				case 'mcpServerError':
 					addMessage('❌ Error with MCP server: ' + message.data.error, 'error');
+					break;
+				case 'permissionsData':
+					// Update permissions UI
+					renderPermissions(message.data);
+					break;
+				case 'anthropicTestResult':
+					handleTestResult('anthropic', message);
+					break;
+				case 'azureTestResult':
+					handleTestResult('azure', message);
+					break;
+				case 'deepseekTestResult':
+					handleTestResult('deepseek', message);
 					break;
 			}
 		});
@@ -3191,19 +3358,68 @@ const html = `<!DOCTYPE html>
 			conversations.forEach(conv => {
 				const item = document.createElement('div');
 				item.className = 'conversation-item';
-				item.onclick = () => loadConversation(conv.filename);
 
 				const date = new Date(conv.startTime).toLocaleDateString();
 				const time = new Date(conv.startTime).toLocaleTimeString();
 
 				item.innerHTML = \`
-					<div class="conversation-title">\${conv.firstUserMessage.substring(0, 60)}\${conv.firstUserMessage.length > 60 ? '...' : ''}</div>
-					<div class="conversation-meta">\${date} at \${time} • \${conv.messageCount} messages • $\${conv.totalCost.toFixed(3)}</div>
-					<div class="conversation-preview">Last: \${conv.lastUserMessage.substring(0, 80)}\${conv.lastUserMessage.length > 80 ? '...' : ''}</div>
+					<div class="conversation-content" style="flex: 1; min-width: 0;">
+						<div class="conversation-title">\${conv.firstUserMessage.substring(0, 60)}\${conv.firstUserMessage.length > 60 ? '...' : ''}</div>
+						<div class="conversation-meta">\${date} at \${time} • \${conv.messageCount} messages • $\${conv.totalCost.toFixed(3)}</div>
+						<div class="conversation-preview">Last: \${conv.lastUserMessage.substring(0, 80)}\${conv.lastUserMessage.length > 80 ? '...' : ''}</div>
+					</div>
+					<button class="conversation-delete-btn" title="Delete conversation">
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<line x1="18" y1="6" x2="6" y2="18"></line>
+							<line x1="6" y1="6" x2="18" y2="18"></line>
+						</svg>
+					</button>
 				\`;
+
+				// Add click handler for loading conversation (on content area only)
+				const contentArea = item.querySelector('.conversation-content');
+				contentArea.onclick = () => loadConversation(conv.filename);
+
+				// Add click handler for delete button
+				const deleteBtn = item.querySelector('.conversation-delete-btn');
+				deleteBtn.onclick = (e) => {
+					e.stopPropagation();
+					deleteConversation(conv.filename);
+				};
 
 				listDiv.appendChild(item);
 			});
+		}
+
+		function deleteConversation(filename) {
+			if (confirm('Are you sure you want to delete this conversation?')) {
+				vscode.postMessage({
+					type: 'deleteConversation',
+					filename: filename
+				});
+			}
+		}
+
+		function displayHelpContent(content) {
+			// Parse markdown and display as a help message
+			const helpHtml = parseSimpleMarkdown(content);
+
+			const messagesDiv = document.getElementById('messages');
+			const shouldScroll = shouldAutoScroll(messagesDiv);
+
+			const messageDiv = document.createElement('div');
+			messageDiv.className = 'message system help-content';
+
+			const contentDiv = document.createElement('div');
+			contentDiv.className = 'message-content help-message';
+			contentDiv.innerHTML = helpHtml;
+
+			messageDiv.appendChild(contentDiv);
+			messagesDiv.appendChild(messageDiv);
+
+			if (shouldScroll) {
+				messagesDiv.scrollTop = messagesDiv.scrollHeight;
+			}
 		}
 
 		function handleClipboardText(text) {
@@ -3296,6 +3512,8 @@ const html = `<!DOCTYPE html>
 			// Clear existing options
 			modelSelector.innerHTML = '';
 
+			let defaultModel = '';
+
 			if (provider === 'anthropic') {
 				const claudeModels = [
 					{ value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4' },
@@ -3309,6 +3527,7 @@ const html = `<!DOCTYPE html>
 					option.textContent = model.label;
 					modelSelector.appendChild(option);
 				});
+				defaultModel = 'claude-sonnet-4-20250514';
 			} else if (provider === 'azure') {
 				const azureModels = [
 					{ value: 'gpt-4o', label: 'GPT-4o' },
@@ -3323,6 +3542,7 @@ const html = `<!DOCTYPE html>
 					option.textContent = model.label;
 					modelSelector.appendChild(option);
 				});
+				defaultModel = 'gpt-4o';
 			} else if (provider === 'deepseek') {
 				const deepseekModels = [
 					{ value: 'deepseek-chat', label: 'DeepSeek Chat' },
@@ -3335,6 +3555,12 @@ const html = `<!DOCTYPE html>
 					option.textContent = model.label;
 					modelSelector.appendChild(option);
 				});
+				defaultModel = 'deepseek-chat';
+			}
+
+			// Set default value to ensure something is selected
+			if (defaultModel) {
+				modelSelector.value = defaultModel;
 			}
 		}
 
@@ -3522,7 +3748,7 @@ const html = `<!DOCTYPE html>
 					html += \`
 						<div class="permission-item">
 							<div class="permission-info">
-								<span class="permission-tool">\${toolName}</span>
+								<span class="permission-tool" data-tool="\${toolName}">\${toolName}</span>
 								<span class="permission-desc">All</span>
 							</div>
 							<button class="permission-remove-btn" onclick="removePermission('\${toolName}', null)">Remove</button>
@@ -3535,7 +3761,7 @@ const html = `<!DOCTYPE html>
 						html += \`
 							<div class="permission-item">
 								<div class="permission-info">
-									<span class="permission-tool">\${toolName}</span>
+									<span class="permission-tool" data-tool="\${toolName}">\${toolName}</span>
 									<span class="permission-command"><code>\${displayCommand}</code></span>
 								</div>
 								<button class="permission-remove-btn" onclick="removePermission('\${toolName}', '\${escapeHtml(command)}')">Remove</button>
@@ -3655,12 +3881,34 @@ const html = `<!DOCTYPE html>
 			type: 'getCustomSnippets'
 		});
 
+		// Initialize model selector with default value on page load
+		(function initModelSelector() {
+			// First populate options based on current provider
+			updateModelSelectorOptions(currentProvider);
+
+			const modelSelector = document.getElementById('modelSelector');
+			if (modelSelector && modelSelector.options.length > 0) {
+				// Set first option as selected if nothing is selected
+				if (!modelSelector.value || modelSelector.value === '') {
+					modelSelector.value = modelSelector.options[0].value;
+				}
+			}
+		})();
+
+		// Initialize agentic mode switch
+		(function initAgenticModeSwitch() {
+			const switchEl = document.getElementById('agenticModeSwitch');
+			if (switchEl && agenticModeEnabled) {
+				switchEl.classList.add('active');
+			}
+		})();
+
 		// Detect slash commands input
 		messageInput.addEventListener('input', (e) => {
 			const value = messageInput.value;
 			// Only trigger when "/" is the very first and only character
 			if (value === '/') {
-				showSlashCommandsModal();
+				showSlashCommandsPopup();
 			}
 		});
 
@@ -3733,16 +3981,24 @@ const html = `<!DOCTYPE html>
 				const deepseekApiKeyEl = document.getElementById('deepseek-api-key');
 				if (deepseekApiKeyEl) deepseekApiKeyEl.value = message.data['deepseek.apiKey'] || '';
 
-				// Set model selector value based on provider
+				// Update global provider and repopulate model selector
+				currentProvider = provider;
+				updateModelSelectorOptions(provider);
+
+				// Set model selector value based on provider (after options are populated)
 				const modelSelectorEl = document.getElementById('modelSelector');
-				if (modelSelectorEl) {
+				if (modelSelectorEl && modelSelectorEl.options.length > 0) {
+					let modelToSet = '';
 					if (provider === 'anthropic') {
-						modelSelectorEl.value = message.data['anthropic.model'] || 'claude-sonnet-4-20250514';
+						modelToSet = message.data['anthropic.model'] || 'claude-sonnet-4-20250514';
 					} else if (provider === 'azure') {
-						modelSelectorEl.value = message.data['azure.model'] || 'gpt-4o';
+						modelToSet = message.data['azure.model'] || 'gpt-4o';
 					} else if (provider === 'deepseek') {
-						modelSelectorEl.value = message.data['deepseek.model'] || 'deepseek-chat';
+						modelToSet = message.data['deepseek.model'] || 'deepseek-chat';
 					}
+					// Verify the option exists before setting
+					const optionExists = Array.from(modelSelectorEl.options).some(opt => opt.value === modelToSet);
+					modelSelectorEl.value = optionExists ? modelToSet : modelSelectorEl.options[0].value;
 				}
 
 				// Update yolo warning visibility
@@ -3750,60 +4006,7 @@ const html = `<!DOCTYPE html>
 
 				// Show/hide WSL options
 				document.getElementById('wslOptions').style.display = message.data['wsl.enabled'] ? 'block' : 'none';
-			} else if (message.type === 'anthropicTestResult') {
-				const resultSpan = document.getElementById('anthropicTestResult');
-				const testBtn = document.getElementById('testAnthropicBtn');
-				testBtn.disabled = false;
-
-				if (message.success) {
-					resultSpan.textContent = 'Connected!';
-					resultSpan.className = 'test-result success';
-					// Auto-hide success message after 3 seconds
-					setTimeout(() => {
-						resultSpan.textContent = '';
-						resultSpan.className = 'test-result';
-					}, 3000);
-				} else {
-					resultSpan.textContent = message.error || 'Connection failed';
-					resultSpan.className = 'test-result error';
-				}
-			} else if (message.type === 'azureTestResult') {
-				const resultSpan = document.getElementById('azureTestResult');
-				const testBtn = document.getElementById('testAzureBtn');
-				testBtn.disabled = false;
-
-				if (message.success) {
-					resultSpan.textContent = 'Connected!';
-					resultSpan.className = 'test-result success';
-					// Auto-hide success message after 3 seconds
-					setTimeout(() => {
-						resultSpan.textContent = '';
-						resultSpan.className = 'test-result';
-					}, 3000);
-				} else {
-					resultSpan.textContent = message.error || 'Connection failed';
-					resultSpan.className = 'test-result error';
-				}
-			} else if (message.type === 'deepseekTestResult') {
-				const resultSpan = document.getElementById('deepseekTestResult');
-				const testBtn = document.getElementById('testDeepSeekBtn');
-				testBtn.disabled = false;
-
-				if (message.success) {
-					resultSpan.textContent = 'Connected!';
-					resultSpan.className = 'test-result success';
-					// Auto-hide success message after 3 seconds
-					setTimeout(() => {
-						resultSpan.textContent = '';
-						resultSpan.className = 'test-result';
-					}, 3000);
-				} else {
-					resultSpan.textContent = message.error || 'Connection failed';
-					resultSpan.className = 'test-result error';
-				}
-			}
-
-			if (message.type === 'platformInfo') {
+			} else if (message.type === 'platformInfo') {
 				// Check if user is on Windows and show WSL alert if not dismissed and WSL not already enabled
 				if (message.data.isWindows && !message.data.wslAlertDismissed && !message.data.wslEnabled) {
 					// Small delay to ensure UI is ready
@@ -3811,11 +4014,6 @@ const html = `<!DOCTYPE html>
 						showWSLAlert();
 					}, 1000);
 				}
-			}
-			
-			if (message.type === 'permissionsData') {
-				// Update permissions UI
-				renderPermissions(message.data);
 			}
 		});
 

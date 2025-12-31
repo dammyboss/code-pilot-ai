@@ -470,6 +470,12 @@ class ClaudeChatProvider {
 			case 'executeSlashCommand':
 				this._executeSlashCommand(message.command);
 				return;
+			case 'showHelp':
+				this._showHelp();
+				return;
+			case 'deleteConversation':
+				this._deleteConversation(message.filename);
+				return;
 			case 'dismissWSLAlert':
 				this._dismissWSLAlert();
 				return;
@@ -520,6 +526,12 @@ class ClaudeChatProvider {
 				return;
 			case 'testDeepSeekConnection':
 				this._testDeepSeekConnection(message.apiKey, message.model);
+				return;
+			case 'generateMemoryBank':
+				this._generateMemoryBank();
+				return;
+			case 'createNewRule':
+				this._createNewRule();
 				return;
 		}
 	}
@@ -1714,6 +1726,11 @@ class ClaudeChatProvider {
 		// Initialize conversation if this is the first message
 		if (this._currentConversation.length === 0) {
 			this._conversationStartTime = new Date().toISOString();
+			// Create a new session ID if we don't have one
+			if (!this._currentSessionId) {
+				this._currentSessionId = `session_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+				console.log('Created new session ID:', this._currentSessionId);
+			}
 		}
 
 		if (message.type === 'sessionInfo') {
@@ -2291,6 +2308,105 @@ class ClaudeChatProvider {
 		});
 	}
 
+	private async _showHelp(): Promise<void> {
+		try {
+			// Try to find README in the extension directory first
+			const extensionPath = this._context.extensionPath;
+			const readmePath = path.join(extensionPath, 'README.md');
+
+			let helpContent = '';
+
+			try {
+				const readmeUri = vscode.Uri.file(readmePath);
+				const readmeContent = await vscode.workspace.fs.readFile(readmeUri);
+				helpContent = new TextDecoder().decode(readmeContent);
+			} catch {
+				// If no README found, show default help
+				helpContent = this._getDefaultHelpContent();
+			}
+
+			this._postMessage({
+				type: 'helpContent',
+				data: helpContent
+			});
+		} catch (error) {
+			console.error('Error showing help:', error);
+			this._postMessage({
+				type: 'helpContent',
+				data: this._getDefaultHelpContent()
+			});
+		}
+	}
+
+	private _getDefaultHelpContent(): string {
+		return `# Code Pilot AI - Help
+
+## Quick Actions
+
+- **/help** - Display this help information
+- **/clear** - Clear the current chat and start fresh
+- **/compact** - Remove older messages to save space
+
+## Features
+
+### Chat with AI
+Type your message in the input box and press Enter or click Send to chat with the AI assistant.
+
+### File Context
+Use **@** to mention files from your workspace. The AI will have context about these files.
+
+### Image Support
+Click the image button to attach images to your messages.
+
+### Model Selection
+Use the dropdown in the chat area to switch between different AI models.
+
+### Modes
+- **Plan First** - AI will plan before executing
+- **Thinking Mode** - AI shows its reasoning process
+- **Agentic** - AI can take autonomous actions
+
+### Settings
+Click the gear icon to configure:
+- API keys for different providers
+- WSL settings (Windows)
+- Permissions for auto-approval
+
+### Conversation History
+Click the history icon to view and load previous conversations.
+
+## Tips
+
+- Use Shift+Enter for multi-line messages
+- Press Escape to close popups
+- Hover over conversations to delete them
+`;
+	}
+
+	private async _deleteConversation(filename: string): Promise<void> {
+		try {
+			const storagePath = this._context.storageUri?.fsPath;
+			if (!storagePath) {
+				return;
+			}
+
+			const conversationsDir = path.join(storagePath, 'conversations');
+			const filePath = path.join(conversationsDir, filename);
+			const fileUri = vscode.Uri.file(filePath);
+
+			await vscode.workspace.fs.delete(fileUri);
+
+			// Send updated conversation list to UI
+			this._sendConversationList();
+
+			// Show confirmation
+			vscode.window.showInformationMessage('Conversation deleted.');
+		} catch (error) {
+			console.error('Error deleting conversation:', error);
+			vscode.window.showErrorMessage('Failed to delete conversation.');
+		}
+	}
+
 	private _sendPlatformInfo() {
 		const platform = process.platform;
 		const dismissed = this._context.globalState.get<boolean>('wslAlertDismissed', false);
@@ -2370,6 +2486,127 @@ class ClaudeChatProvider {
 		} catch (error) {
 			console.error('Error creating image file:', error);
 			vscode.window.showErrorMessage('Failed to create image file');
+		}
+	}
+
+	private async _generateMemoryBank(): Promise<void> {
+		try {
+			// Get workspace folder
+			const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+			if (!workspaceFolder) {
+				vscode.window.showErrorMessage('No workspace folder found');
+				return;
+			}
+
+			// Create .codepilot directory if it doesn't exist
+			const codepilotDir = vscode.Uri.joinPath(workspaceFolder.uri, '.codepilot');
+			try {
+				await vscode.workspace.fs.createDirectory(codepilotDir);
+			} catch {
+				// Directory might already exist
+			}
+
+			// Create memory bank file
+			const memoryBankPath = vscode.Uri.joinPath(codepilotDir, 'memory-bank.md');
+			const memoryBankContent = `# Memory Bank
+
+## Project Overview
+<!-- Add a brief description of your project here -->
+
+## Key Patterns
+<!-- Document important patterns and conventions used in this project -->
+
+## Architecture
+<!-- Describe the high-level architecture of your project -->
+
+## Common Tasks
+<!-- Document common development tasks and how to perform them -->
+
+## Notes
+<!-- Add any other important notes here -->
+
+---
+Generated by Code Pilot AI
+`;
+
+			await vscode.workspace.fs.writeFile(memoryBankPath, new TextEncoder().encode(memoryBankContent));
+
+			// Open the file for editing
+			const doc = await vscode.workspace.openTextDocument(memoryBankPath);
+			await vscode.window.showTextDocument(doc);
+
+			this._postMessage({
+				type: 'streamText',
+				data: '✅ Memory bank created at .codepilot/memory-bank.md. Edit this file to add project-specific context that will help Code Pilot AI understand your project better.'
+			});
+			this._postMessage({ type: 'streamEnd' });
+		} catch (error: any) {
+			console.error('Error generating memory bank:', error);
+			vscode.window.showErrorMessage(`Failed to generate memory bank: ${error.message}`);
+		}
+	}
+
+	private async _createNewRule(): Promise<void> {
+		try {
+			// Get workspace folder
+			const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+			if (!workspaceFolder) {
+				vscode.window.showErrorMessage('No workspace folder found');
+				return;
+			}
+
+			// Create .codepilot directory if it doesn't exist
+			const codepilotDir = vscode.Uri.joinPath(workspaceFolder.uri, '.codepilot');
+			try {
+				await vscode.workspace.fs.createDirectory(codepilotDir);
+			} catch {
+				// Directory might already exist
+			}
+
+			// Create rules directory
+			const rulesDir = vscode.Uri.joinPath(codepilotDir, 'rules');
+			try {
+				await vscode.workspace.fs.createDirectory(rulesDir);
+			} catch {
+				// Directory might already exist
+			}
+
+			// Generate a unique rule filename
+			const timestamp = Date.now();
+			const rulePath = vscode.Uri.joinPath(rulesDir, `rule-${timestamp}.md`);
+			const ruleContent = `# Rule Name
+<!-- Give your rule a descriptive name -->
+
+## Description
+<!-- Describe what this rule does and when it should apply -->
+
+## Pattern
+<!-- Define the pattern or conditions when this rule should be triggered -->
+
+## Action
+<!-- Describe the action that should be taken when this rule matches -->
+
+## Examples
+<!-- Provide examples of when this rule should apply -->
+
+---
+Created by Code Pilot AI
+`;
+
+			await vscode.workspace.fs.writeFile(rulePath, new TextEncoder().encode(ruleContent));
+
+			// Open the file for editing
+			const doc = await vscode.workspace.openTextDocument(rulePath);
+			await vscode.window.showTextDocument(doc);
+
+			this._postMessage({
+				type: 'streamText',
+				data: `✅ New rule created at .codepilot/rules/rule-${timestamp}.md. Edit this file to define your custom rule.`
+			});
+			this._postMessage({ type: 'streamEnd' });
+		} catch (error: any) {
+			console.error('Error creating new rule:', error);
+			vscode.window.showErrorMessage(`Failed to create new rule: ${error.message}`);
 		}
 	}
 

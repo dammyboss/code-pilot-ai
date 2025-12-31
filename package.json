@@ -248,6 +248,16 @@
           "enum": ["deepseek-chat", "deepseek-coder", "deepseek-reasoner"],
           "default": "deepseek-chat",
           "description": "DeepSeek model to use"
+        },
+        "codePilotAI.agentic.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable agentic coding mode for autonomous task execution"
+        },
+        "codePilotAI.rules.readme": {
+          "type": "boolean",
+          "default": true,
+          "description": "Include README file content in context"
         }
       }
     }
