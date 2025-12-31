@@ -7,7 +7,7 @@ export interface Message {
 }
 
 export interface ContentBlock {
-    type: 'text' | 'tool_use' | 'tool_result';
+    type: 'text' | 'tool_use' | 'tool_result' | 'image';
     text?: string;
     id?: string;
     name?: string;
@@ -15,6 +15,18 @@ export interface ContentBlock {
     tool_use_id?: string;
     content?: string;
     is_error?: boolean;
+    // Image-specific fields
+    source?: {
+        type: 'base64';
+        media_type: string;
+        data: string;
+    };
+}
+
+export interface ImageAttachment {
+    filePath: string;
+    base64Data?: string;
+    fileName: string;
 }
 
 export interface StreamCallbacks {
@@ -152,13 +164,53 @@ When you need to perform an action, use the appropriate tool. After receiving to
         }
     }
 
-    async sendMessage(userMessage: string, callbacks: StreamCallbacks, thinkingEnabled: boolean = false): Promise<void> {
+    async sendMessage(userMessage: string, callbacks: StreamCallbacks, thinkingEnabled: boolean = false, images?: ImageAttachment[]): Promise<void> {
         this.abortController = new AbortController();
+
+        // Build message content with text and optional images
+        let messageContent: string | ContentBlock[];
+
+        if (images && images.length > 0) {
+            // Create content blocks array with images and text
+            const contentBlocks: any[] = [];
+
+            // Add images first (using Anthropic's expected format)
+            for (const img of images) {
+                if (img.base64Data) {
+                    // Extract base64 data and media type from data URL
+                    const matches = img.base64Data.match(/^data:([^;]+);base64,(.+)$/);
+                    if (matches) {
+                        const mediaType = matches[1];
+                        const base64Data = matches[2];
+                        contentBlocks.push({
+                            type: 'image',
+                            source: {
+                                type: 'base64',
+                                media_type: mediaType,
+                                data: base64Data
+                            }
+                        });
+                    }
+                }
+            }
+
+            // Add text content - always include text to give the AI context
+            // If no text provided, add a default prompt for image analysis
+            const textContent = userMessage || 'What is in this image?';
+            contentBlocks.push({
+                type: 'text',
+                text: textContent
+            });
+
+            messageContent = contentBlocks;
+        } else {
+            messageContent = userMessage;
+        }
 
         // Add user message to history
         this.conversationHistory.push({
             role: 'user',
-            content: userMessage
+            content: messageContent
         });
 
         try {
@@ -167,7 +219,15 @@ When you need to perform an action, use the appropriate tool. After receiving to
             if (error.name === 'AbortError') {
                 callbacks.onError('Request cancelled');
             } else {
-                callbacks.onError(error.message || 'Unknown error occurred');
+                // Check for corrupted conversation history error
+                const errorMsg = error.message || 'Unknown error occurred';
+                if (errorMsg.includes('tool_calls') && errorMsg.includes('tool_call_id')) {
+                    // Clear corrupted history and notify user
+                    this.conversationHistory = [];
+                    callbacks.onError('Conversation history was corrupted. Please try again with a fresh message.');
+                } else {
+                    callbacks.onError(errorMsg);
+                }
             }
         } finally {
             this.abortController = null;

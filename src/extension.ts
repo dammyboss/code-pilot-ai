@@ -5,7 +5,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import html from './ui';
 import { ToolExecutor, anthropicTools } from './tools';
-import { APIClient, StreamCallbacks, Provider } from './api-client';
+import { APIClient, StreamCallbacks, Provider, ImageAttachment } from './api-client';
 import { MCPClient, MCPServerConfig } from './mcp-client';
 import { createChatRequestHandler } from './chat-participant';
 
@@ -442,7 +442,7 @@ class ClaudeChatProvider {
 	private _handleWebviewMessage(message: any) {
 		switch (message.type) {
 			case 'sendMessage':
-				this._sendMessageToClaude(message.text, message.planMode, message.thinkingMode);
+				this._sendMessageToClaude(message.text, message.planMode, message.thinkingMode, message.images);
 				return;
 			case 'newSession':
 				this._newSession();
@@ -621,7 +621,7 @@ class ClaudeChatProvider {
 		}
 	}
 
-	private async _sendMessageToClaude(message: string, planMode?: boolean, thinkingMode?: boolean) {
+	private async _sendMessageToClaude(message: string, planMode?: boolean, thinkingMode?: boolean, images?: Array<{filePath: string, base64Data?: string, fileName: string}>) {
 		// Ensure API client is initialized
 		if (!this._apiClient || !this._toolExecutor) {
 			await this._initializeAPIClient();
@@ -797,7 +797,7 @@ class ClaudeChatProvider {
 
 		// Send message using API client
 		try {
-			await this._apiClient.sendMessage(actualMessage, callbacks, thinkingMode || false);
+			await this._apiClient.sendMessage(actualMessage, callbacks, thinkingMode || false, images);
 		} catch (error: any) {
 			this._outputChannel.appendLine(`Send message error: ${error.message}`);
 			this._sendAndSaveMessage({

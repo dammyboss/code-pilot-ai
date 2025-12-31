@@ -1486,57 +1486,138 @@ const styles = `
     .slash-commands-popup {
         position: absolute;
         bottom: 100%;
-        left: 10px;
-        background: var(--vscode-dropdown-background);
-        border: 1px solid var(--vscode-dropdown-border);
+        left: 8px;
+        right: 50px;
+        background: #1e1e1e;
+        border: 1px solid #3c3c3c;
         border-radius: 6px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
         z-index: 1000;
-        min-width: 240px;
-        margin-bottom: 8px;
+        margin-bottom: 4px;
+    }
+
+    .slash-popup-header {
+        padding: 8px 12px;
+        font-size: 11px;
+        font-weight: 400;
+        color: var(--vscode-descriptionForeground);
+        border-bottom: 1px solid #3c3c3c;
     }
 
     .slash-popup-content {
-        padding: 6px;
+        padding: 4px;
     }
 
     .slash-command-item {
         display: flex;
         align-items: center;
-        padding: 10px 12px;
+        padding: 6px 8px;
         cursor: pointer;
         border-radius: 4px;
-        transition: background-color 0.15s ease;
+        transition: background-color 0.1s ease;
+        gap: 10px;
     }
 
     .slash-command-item:hover {
-        background-color: var(--vscode-list-hoverBackground);
+        background-color: #2a2d2e;
+    }
+
+    .slash-command-icon {
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--vscode-descriptionForeground);
+        flex-shrink: 0;
+    }
+
+    .slash-command-icon svg {
+        width: 16px;
+        height: 16px;
     }
 
     .slash-command-item:hover .slash-command-icon {
         color: var(--vscode-foreground);
     }
 
-    .slash-command-icon {
-        flex-shrink: 0;
-        transition: color 0.15s ease;
-    }
-
     .slash-command-content {
         display: flex;
-        flex-direction: column;
-        gap: 2px;
+        flex-direction: row;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+        min-width: 0;
     }
 
     .slash-command-title {
         font-size: 13px;
-        font-weight: 500;
+        font-weight: 600;
         color: var(--vscode-foreground);
+        line-height: 1.2;
     }
 
     .slash-command-description {
         font-size: 12px;
         color: var(--vscode-descriptionForeground);
+        line-height: 1.3;
+        opacity: 0.7;
+    }
+
+    /* Image Preview Container */
+    .image-preview-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 8px;
+        background: var(--vscode-input-background);
+        border: 1px solid var(--vscode-input-border);
+        border-bottom: none;
+        border-radius: 6px 6px 0 0;
+        max-height: 150px;
+        overflow-y: auto;
+    }
+
+    .image-preview-item {
+        position: relative;
+        width: 80px;
+        height: 80px;
+        border-radius: 6px;
+        overflow: hidden;
+        border: 1px solid var(--vscode-widget-border);
+        background: var(--vscode-editor-background);
+    }
+
+    .image-preview-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .image-remove-btn {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+
+    .image-preview-item:hover .image-remove-btn {
+        opacity: 1;
+    }
+
+    .image-remove-btn:hover {
+        background: rgba(220, 53, 69, 0.9);
     }
 
     .input-modes {

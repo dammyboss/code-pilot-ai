@@ -64,43 +64,43 @@ const html = `<!DOCTYPE html>
 		<div class="input-container" id="inputContainer">
 			<!-- Slash Commands Popup (positioned above input) -->
 			<div id="slashCommandsPopup" class="slash-commands-popup" style="display: none;">
-				<div class="slash-popup-header" style="padding: 8px 12px; font-size: 11px; color: var(--vscode-descriptionForeground); border-bottom: 1px solid var(--vscode-widget-border);">Quick Actions</div>
+				<div class="slash-popup-header">Quick Actions</div>
 				<div class="slash-popup-content">
-					<div class="slash-command-item" onclick="executeSlashCommand('help')" style="padding: 8px 12px;">
-						<div class="slash-command-icon" style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; margin-right: 10px; color: var(--vscode-descriptionForeground);">
-							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<div class="slash-command-item" onclick="executeSlashCommand('help')">
+						<div class="slash-command-icon">
+							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 								<circle cx="12" cy="12" r="10"/>
 								<path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
 								<line x1="12" y1="17" x2="12.01" y2="17"/>
 							</svg>
 						</div>
 						<div class="slash-command-content">
-							<div class="slash-command-title" style="font-size: 13px;">/help</div>
-							<div class="slash-command-description" style="font-size: 12px;">Learn more about Code Pilot AI</div>
+							<div class="slash-command-title">/help</div>
+							<div class="slash-command-description">Learn more about Code Pilot AI</div>
 						</div>
 					</div>
-					<div class="slash-command-item" onclick="executeSlashCommand('clear')" style="padding: 8px 12px;">
-						<div class="slash-command-icon" style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; margin-right: 10px; color: var(--vscode-descriptionForeground);">
-							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<div class="slash-command-item" onclick="executeSlashCommand('clear')">
+						<div class="slash-command-icon">
+							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 								<polyline points="3 6 5 6 21 6"/>
 								<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
 							</svg>
 						</div>
 						<div class="slash-command-content">
-							<div class="slash-command-title" style="font-size: 13px;">/clear</div>
-							<div class="slash-command-description" style="font-size: 12px;">Clear this session</div>
+							<div class="slash-command-title">/clear</div>
+							<div class="slash-command-description">Clear this session</div>
 						</div>
 					</div>
-					<div class="slash-command-item" onclick="executeSlashCommand('compact')" style="padding: 8px 12px;">
-						<div class="slash-command-icon" style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; margin-right: 10px; color: var(--vscode-descriptionForeground);">
-							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<div class="slash-command-item" onclick="executeSlashCommand('compact')">
+						<div class="slash-command-icon">
+							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 								<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
 								<line x1="9" y1="3" x2="9" y2="21"/>
 							</svg>
 						</div>
 						<div class="slash-command-content">
-							<div class="slash-command-title" style="font-size: 13px;">/compact</div>
-							<div class="slash-command-description" style="font-size: 12px;">Compact this conversation</div>
+							<div class="slash-command-title">/compact</div>
+							<div class="slash-command-description">Compact this conversation</div>
 						</div>
 					</div>
 				</div>
@@ -118,6 +118,7 @@ const html = `<!DOCTYPE html>
 			</div>
 			<div class="textarea-container">
 				<div class="textarea-wrapper">
+					<div id="imagePreviewContainer" class="image-preview-container" style="display: none;"></div>
 					<textarea class="input-field" id="messageInput" placeholder="Type your message..." rows="1" style="font-size: 14px;"></textarea>
 					<div class="input-controls">
 						<div class="left-controls">
@@ -139,7 +140,7 @@ const html = `<!DOCTYPE html>
 							</div>
 						</div>
 						<div class="right-controls">
-							<button class="slash-btn" onclick="showSlashCommandsPopup()" title="Quick actions" style="font-size: 14px;">/</button>
+							<button class="slash-btn" onclick="showSlashCommandsPopup(messageInput.value)" title="Quick actions" style="font-size: 14px;">/</button>
 							<button class="at-btn" onclick="showFilePicker()" title="Reference files" style="font-size: 14px;">@</button>
 							<button class="image-btn" id="imageBtn" onclick="selectImage()" title="Attach images">
 							<svg
@@ -497,6 +498,10 @@ const html = `<!DOCTYPE html>
 		let currentProvider = 'anthropic';
 		let currentModel = 'claude-sonnet-4-20250514';
 
+		// Image attachment management
+		let attachedImages = [];
+		const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+
 		// Stub function for state saving (disabled)
 		function saveWebviewState() {
 			// State persistence disabled for now
@@ -519,14 +524,64 @@ const html = `<!DOCTYPE html>
 			});
 		}
 
+		// Slash commands data for filtering
+		const slashCommands = [
+			{ name: 'help', title: '/help', description: 'Learn more about Code Pilot AI', icon: 'help' },
+			{ name: 'clear', title: '/clear', description: 'Clear this session', icon: 'trash' },
+			{ name: 'compact', title: '/compact', description: 'Compact this conversation', icon: 'compact' }
+		];
+
 		// Slash commands popup functions
-		function showSlashCommandsPopup() {
+		function showSlashCommandsPopup(filter = '') {
 			const popup = document.getElementById('slashCommandsPopup');
-			if (popup) {
-				popup.style.display = 'block';
-				// Focus the message input so user can continue typing
-				messageInput.focus();
+			if (!popup) return;
+
+			// Filter commands based on input
+			const searchTerm = filter.toLowerCase().replace('/', '');
+			const filteredCommands = slashCommands.filter(cmd =>
+				cmd.name.toLowerCase().includes(searchTerm) ||
+				cmd.title.toLowerCase().includes('/' + searchTerm)
+			);
+
+			// If no matches, hide popup
+			if (filteredCommands.length === 0) {
+				popup.style.display = 'none';
+				return;
 			}
+
+			// Build popup content dynamically
+			const contentDiv = popup.querySelector('.slash-popup-content');
+			if (contentDiv) {
+				contentDiv.innerHTML = filteredCommands.map(cmd => {
+					let iconSvg = '';
+					if (cmd.icon === 'help') {
+						iconSvg = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+					} else if (cmd.icon === 'trash') {
+						iconSvg = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
+					} else if (cmd.icon === 'compact') {
+						iconSvg = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>';
+					}
+					return \`
+						<div class="slash-command-item" onclick="executeSlashCommand('\${cmd.name}')">
+							<div class="slash-command-icon">\${iconSvg}</div>
+							<div class="slash-command-content">
+								<div class="slash-command-title">\${cmd.title}</div>
+								<div class="slash-command-description">\${cmd.description}</div>
+							</div>
+						</div>
+					\`;
+				}).join('');
+			}
+
+			// Update header to show filter count
+			const headerDiv = popup.querySelector('.slash-popup-header');
+			if (headerDiv) {
+				headerDiv.textContent = searchTerm ? \`c: (\${filteredCommands.length})\` : 'Quick Actions';
+			}
+
+			popup.style.display = 'block';
+			// Focus the message input so user can continue typing
+			messageInput.focus();
 		}
 
 		function hideSlashCommandsPopup() {
@@ -1315,15 +1370,27 @@ const html = `<!DOCTYPE html>
 
 		function sendMessage() {
 			const text = messageInput.value.trim();
-			if (text) {
+			const hasImages = attachedImages.length > 0;
+
+			if (text || hasImages) {
+				// Prepare image data for sending
+				const images = attachedImages.map(img => ({
+					filePath: img.filePath,
+					base64Data: img.base64Data,
+					fileName: img.fileName
+				}));
+
 				vscode.postMessage({
 					type: 'sendMessage',
 					text: text,
+					images: images,
 					planMode: planModeEnabled,
 					thinkingMode: thinkingModeEnabled
 				});
-				
+
 				messageInput.value = '';
+				// Clear attached images after sending
+				clearAttachedImages();
 			}
 		}
 
@@ -1538,8 +1605,8 @@ const html = `<!DOCTYPE html>
 			} else if (e.key === '/' && !e.ctrlKey && !e.metaKey && messageInput.value === '') {
 				// Show slash commands popup when typing / at the beginning
 				setTimeout(() => {
-					if (messageInput.value === '/') {
-						showSlashCommandsPopup();
+					if (messageInput.value.startsWith('/')) {
+						showSlashCommandsPopup(messageInput.value);
 					}
 				}, 0);
 			} else if (e.key === '@' && !e.ctrlKey && !e.metaKey) {
@@ -1595,6 +1662,11 @@ const html = `<!DOCTYPE html>
 								const reader = new FileReader();
 								reader.onload = function(event) {
 									const base64Data = event.target.result;
+									console.log('Showing image preview immediately');
+									// Show preview immediately with base64 data
+									const tempPath = 'pasted_image_' + Date.now() + '.' + item.type.split('/')[1];
+									addImageToPreview(tempPath, base64Data);
+
 									console.log('Sending image to extension for file creation');
 									// Send to extension to create file
 									vscode.postMessage({
@@ -2061,7 +2133,7 @@ const html = `<!DOCTYPE html>
 
 		// Slash commands modal functions (for backward compatibility)
 		function showSlashCommandsModal() {
-			showSlashCommandsPopup();
+			showSlashCommandsPopup(messageInput.value);
 		}
 
 		function hideSlashCommandsModal() {
@@ -2574,31 +2646,23 @@ const html = `<!DOCTYPE html>
 					break;
 					
 				case 'imagePath':
-					// Handle image file path response
-					if (message.data.filePath) {
-						// Get current cursor position and content
-						const cursorPosition = messageInput.selectionStart || messageInput.value.length;
-						const currentValue = messageInput.value || '';
-						
-						// Insert the file path at the current cursor position
-						const textBefore = currentValue.substring(0, cursorPosition);
-						const textAfter = currentValue.substring(cursorPosition);
-						
-						// Add a space before the path if there's text before and it doesn't end with whitespace
-						const separator = (textBefore && !textBefore.endsWith(' ') && !textBefore.endsWith('\\n')) ? ' ' : '';
-						
-						messageInput.value = textBefore + separator + message.data.filePath + textAfter;
-						
-						// Move cursor to end of inserted path
-						const newCursorPosition = cursorPosition + separator.length + message.data.filePath.length;
-						messageInput.setSelectionRange(newCursorPosition, newCursorPosition);
-						
-						// Focus back on textarea and adjust height
+					// Handle image file path response - show preview instead of path
+					if (message.data && message.data.filePath) {
+						// Update the last pasted image with the real file path (if it was a paste operation)
+						const lastImage = attachedImages[attachedImages.length - 1];
+						if (lastImage && lastImage.filePath.startsWith('pasted_image_')) {
+							// Update the existing entry with the real path
+							lastImage.filePath = message.data.filePath;
+							lastImage.fileName = message.data.filePath.split(/[\\/\\\\]/).pop();
+						} else {
+							// This is from file picker, add new preview
+							addImageToPreview(message.data.filePath);
+						}
 						messageInput.focus();
-						adjustTextareaHeight();
-						
-						console.log('Inserted image path:', message.data.filePath);
-						console.log('Full textarea value:', messageInput.value);
+					} else if (message.path) {
+						// Alternative format from file picker
+						addImageToPreview(message.path);
+						messageInput.focus();
 					}
 					break;
 					
@@ -2698,15 +2762,6 @@ const html = `<!DOCTYPE html>
 					filteredFiles = message.data;
 					selectedFileIndex = -1;
 					renderFileList();
-					break;
-					
-				case 'imagePath':
-					// Add the image path to the textarea
-					const currentText = messageInput.value;
-					const pathIndicator = \`@\${message.path} \`;
-					messageInput.value = currentText + pathIndicator;
-					messageInput.focus();
-					adjustTextareaHeight();
 					break;
 					
 				case 'conversationList':
@@ -3327,6 +3382,61 @@ const html = `<!DOCTYPE html>
 			});
 		}
 
+		function addImageToPreview(filePath, base64Data = null) {
+			// Create image preview item
+			const imageId = 'img_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+			const fileName = filePath.split(/[\\/\\\\]/).pop();
+
+			// Store image data
+			attachedImages.push({
+				id: imageId,
+				filePath: filePath,
+				base64Data: base64Data,
+				fileName: fileName
+			});
+
+			// Create preview element
+			const previewItem = document.createElement('div');
+			previewItem.className = 'image-preview-item';
+			previewItem.id = imageId;
+			previewItem.innerHTML = \`
+				<img src="\${base64Data || 'vscode-file://vscode-app/' + filePath.replace(/\\\\/g, '/')}" alt="\${fileName}" />
+				<button class="image-remove-btn" onclick="removeAttachedImage('\${imageId}')" title="Remove image">
+					<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+						<path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+					</svg>
+				</button>
+			\`;
+
+			// Show container and add preview
+			imagePreviewContainer.style.display = 'flex';
+			imagePreviewContainer.appendChild(previewItem);
+
+			// Show feedback
+			showImageAddedFeedback(fileName);
+		}
+
+		function removeAttachedImage(imageId) {
+			// Remove from array
+			attachedImages = attachedImages.filter(img => img.id !== imageId);
+
+			// Remove from DOM
+			const element = document.getElementById(imageId);
+			if (element) {
+				element.remove();
+			}
+
+			// Hide container if no images
+			if (attachedImages.length === 0) {
+				imagePreviewContainer.style.display = 'none';
+			}
+		}
+
+		function clearAttachedImages() {
+			attachedImages = [];
+			imagePreviewContainer.innerHTML = '';
+			imagePreviewContainer.style.display = 'none';
+		}
 
 		function showImageAddedFeedback(fileName) {
 			// Create temporary feedback element
@@ -3939,9 +4049,12 @@ const html = `<!DOCTYPE html>
 		// Detect slash commands input
 		messageInput.addEventListener('input', (e) => {
 			const value = messageInput.value;
-			// Only trigger when "/" is the very first and only character
-			if (value === '/') {
-				showSlashCommandsPopup();
+			// Show and filter popup when input starts with "/"
+			if (value.startsWith('/')) {
+				showSlashCommandsPopup(value);
+			} else {
+				// Hide popup when "/" is removed or input doesn't start with "/"
+				hideSlashCommandsPopup();
 			}
 		});
 
