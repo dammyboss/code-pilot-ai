@@ -3041,14 +3041,177 @@ const styles = `
         background-color: rgba(0, 0, 0, 0.05);
     }
 
-    /* Hide badge images in help content */
-    .message.help-content img[src*="badge"],
-    .message.help-content img[src*="shields.io"] {
-        display: none;
+    /* Markdown body styling (for marked.js output) */
+    .markdown-body {
+        font-family: var(--vscode-font-family);
+        font-size: 13px;
+        line-height: 1.6;
+        color: var(--vscode-foreground);
     }
 
-    .message.help-content > p:first-child img {
-        display: none;
+    .markdown-body h1 {
+        font-size: 1.8em;
+        font-weight: 600;
+        margin: 0 0 16px 0;
+        padding-bottom: 8px;
+        border-bottom: 2px solid var(--vscode-textBlockQuote-border);
+    }
+
+    .markdown-body h2 {
+        font-size: 1.4em;
+        font-weight: 600;
+        margin: 24px 0 12px 0;
+        padding-bottom: 6px;
+        border-bottom: 1px solid var(--vscode-widget-border);
+    }
+
+    .markdown-body h3 {
+        font-size: 1.2em;
+        font-weight: 600;
+        margin: 20px 0 10px 0;
+    }
+
+    .markdown-body h4 {
+        font-size: 1.1em;
+        font-weight: 600;
+        margin: 16px 0 8px 0;
+    }
+
+    .markdown-body p {
+        margin: 12px 0;
+    }
+
+    .markdown-body ul,
+    .markdown-body ol {
+        margin: 12px 0;
+        padding-left: 28px;
+    }
+
+    .markdown-body li {
+        margin: 6px 0;
+    }
+
+    .markdown-body li > ul,
+    .markdown-body li > ol {
+        margin: 4px 0;
+    }
+
+    .markdown-body code {
+        background-color: var(--vscode-textCodeBlock-background);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: var(--vscode-editor-font-family);
+        font-size: 0.9em;
+    }
+
+    .markdown-body pre {
+        background-color: var(--vscode-textCodeBlock-background);
+        padding: 12px 16px;
+        border-radius: 6px;
+        overflow-x: auto;
+        margin: 12px 0;
+    }
+
+    .markdown-body pre code {
+        background: none;
+        padding: 0;
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+    .markdown-body blockquote {
+        border-left: 4px solid var(--vscode-textBlockQuote-border);
+        margin: 12px 0;
+        padding: 8px 16px;
+        background-color: var(--vscode-textBlockQuote-background);
+        border-radius: 0 6px 6px 0;
+    }
+
+    .markdown-body blockquote p {
+        margin: 4px 0;
+    }
+
+    .markdown-body hr {
+        border: none;
+        border-top: 1px solid var(--vscode-widget-border);
+        margin: 20px 0;
+    }
+
+    .markdown-body a {
+        color: var(--vscode-textLink-foreground);
+        text-decoration: none;
+    }
+
+    .markdown-body a:hover {
+        text-decoration: underline;
+    }
+
+    .markdown-body img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 6px;
+        margin: 8px 0;
+    }
+
+    /* Badge images styling - VS Code style badges */
+    .markdown-body img[alt*="badge"],
+    .markdown-body img[src*="shields.io"],
+    .markdown-body img[src*="img.shields.io"],
+    .markdown-body img[src*="badge"] {
+        display: inline-block;
+        height: 20px;
+        margin: 4px 4px 4px 0;
+        vertical-align: middle;
+        border-radius: 3px;
+        border: none;
+        box-shadow: none;
+    }
+
+    /* Special handling for VS Code Extension badge */
+    .markdown-body img[alt*="VS Code"],
+    .markdown-body img[alt*="Extension"] {
+        height: 28px;
+        margin: 6px 6px 6px 0;
+    }
+
+    .markdown-body table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 16px 0;
+        font-size: 12px;
+    }
+
+    .markdown-body th,
+    .markdown-body td {
+        padding: 10px 14px;
+        border: 1px solid var(--vscode-widget-border);
+        text-align: left;
+    }
+
+    .markdown-body th {
+        background-color: var(--vscode-textCodeBlock-background);
+        font-weight: 600;
+    }
+
+    .markdown-body tr:nth-child(even) {
+        background-color: rgba(0, 0, 0, 0.05);
+    }
+
+    .markdown-body strong {
+        font-weight: 600;
+        color: var(--vscode-foreground);
+    }
+
+    .markdown-body em {
+        font-style: italic;
+    }
+
+    /* Horizontal rules in markdown */
+    .markdown-body hr {
+        border: none;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, var(--vscode-widget-border), transparent);
+        margin: 32px 0;
     }
 
     /* Tool loading animation */
@@ -3622,6 +3785,211 @@ const styles = `
             opacity: 1;
             transform: translateY(0);
         }
+    }
+
+    /* VS Code Native Markdown Preview Styles */
+    .markdown-preview-content {
+        padding: 0;
+        margin: 0;
+        background: transparent;
+    }
+
+    .vscode-markdown-body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, Ubuntu, 'Droid Sans', sans-serif;
+        font-size: 14px;
+        line-height: 1.6;
+        color: var(--vscode-foreground);
+        word-wrap: break-word;
+    }
+
+    .vscode-markdown-body h1 {
+        font-size: 2em;
+        font-weight: 600;
+        padding-bottom: 0.3em;
+        border-bottom: 1px solid var(--vscode-panel-border);
+        margin: 0 0 16px 0;
+    }
+
+    .vscode-markdown-body h2 {
+        font-size: 1.5em;
+        font-weight: 600;
+        padding-bottom: 0.3em;
+        border-bottom: 1px solid var(--vscode-panel-border);
+        margin: 24px 0 16px 0;
+    }
+
+    .vscode-markdown-body h3 {
+        font-size: 1.25em;
+        font-weight: 600;
+        margin: 24px 0 16px 0;
+    }
+
+    .vscode-markdown-body h4 {
+        font-size: 1em;
+        font-weight: 600;
+        margin: 24px 0 16px 0;
+    }
+
+    .vscode-markdown-body h5 {
+        font-size: 0.875em;
+        font-weight: 600;
+        margin: 24px 0 16px 0;
+    }
+
+    .vscode-markdown-body h6 {
+        font-size: 0.85em;
+        font-weight: 600;
+        margin: 24px 0 16px 0;
+        color: var(--vscode-descriptionForeground);
+    }
+
+    .vscode-markdown-body p {
+        margin: 0 0 16px 0;
+    }
+
+    .vscode-markdown-body ul,
+    .vscode-markdown-body ol {
+        margin: 0 0 16px 0;
+        padding-left: 2em;
+    }
+
+    .vscode-markdown-body li {
+        margin: 0.25em 0;
+    }
+
+    .vscode-markdown-body li > p {
+        margin: 0;
+    }
+
+    .vscode-markdown-body li > ul,
+    .vscode-markdown-body li > ol {
+        margin: 0;
+    }
+
+    .vscode-markdown-body code {
+        font-family: var(--vscode-editor-font-family, 'SF Mono', Monaco, Menlo, Consolas, 'Ubuntu Mono', 'Liberation Mono', 'DejaVu Sans Mono', 'Courier New', monospace);
+        font-size: 0.9em;
+        padding: 0.2em 0.4em;
+        background-color: var(--vscode-textCodeBlock-background);
+        border-radius: 3px;
+    }
+
+    .vscode-markdown-body pre {
+        margin: 0 0 16px 0;
+        padding: 16px;
+        overflow: auto;
+        font-size: 85%;
+        line-height: 1.45;
+        background-color: var(--vscode-textCodeBlock-background);
+        border-radius: 6px;
+    }
+
+    .vscode-markdown-body pre code {
+        padding: 0;
+        background: transparent;
+        font-size: inherit;
+        border-radius: 0;
+    }
+
+    .vscode-markdown-body blockquote {
+        margin: 0 0 16px 0;
+        padding: 0 1em;
+        color: var(--vscode-descriptionForeground);
+        border-left: 0.25em solid var(--vscode-textBlockQuote-border);
+    }
+
+    .vscode-markdown-body blockquote > :first-child {
+        margin-top: 0;
+    }
+
+    .vscode-markdown-body blockquote > :last-child {
+        margin-bottom: 0;
+    }
+
+    .vscode-markdown-body hr {
+        height: 0.25em;
+        padding: 0;
+        margin: 24px 0;
+        background-color: var(--vscode-panel-border);
+        border: 0;
+    }
+
+    .vscode-markdown-body a {
+        color: var(--vscode-textLink-foreground);
+        text-decoration: none;
+    }
+
+    .vscode-markdown-body a:hover {
+        text-decoration: underline;
+    }
+
+    .vscode-markdown-body img {
+        max-width: 100%;
+        height: auto;
+        box-sizing: content-box;
+    }
+
+    .vscode-markdown-body table {
+        display: block;
+        width: max-content;
+        max-width: 100%;
+        overflow: auto;
+        margin: 0 0 16px 0;
+        border-spacing: 0;
+        border-collapse: collapse;
+    }
+
+    .vscode-markdown-body th {
+        font-weight: 600;
+        padding: 6px 13px;
+        border: 1px solid var(--vscode-panel-border);
+    }
+
+    .vscode-markdown-body td {
+        padding: 6px 13px;
+        border: 1px solid var(--vscode-panel-border);
+    }
+
+    .vscode-markdown-body tr {
+        background-color: transparent;
+        border-top: 1px solid var(--vscode-panel-border);
+    }
+
+    .vscode-markdown-body tr:nth-child(2n) {
+        background-color: var(--vscode-textCodeBlock-background);
+    }
+
+    .vscode-markdown-body strong {
+        font-weight: 600;
+    }
+
+    .vscode-markdown-body em {
+        font-style: italic;
+    }
+
+    .vscode-markdown-body del {
+        text-decoration: line-through;
+    }
+
+    /* Badge styling for shields.io badges */
+    .vscode-markdown-body img[alt*="badge"],
+    .vscode-markdown-body img[src*="shields.io"],
+    .vscode-markdown-body img[src*="img.shields.io"],
+    .vscode-markdown-body img[src*="badge"] {
+        display: inline-block;
+        vertical-align: middle;
+        margin: 0 2px;
+    }
+
+    /* Task list styling */
+    .vscode-markdown-body input[type="checkbox"] {
+        margin: 0 0.35em 0.25em -1.6em;
+        vertical-align: middle;
+    }
+
+    .vscode-markdown-body .contains-task-list {
+        list-style: none;
+        padding-left: 1.6em;
     }
 </style>`
 

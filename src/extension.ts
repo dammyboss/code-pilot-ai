@@ -7,12 +7,25 @@ import html from './ui';
 import { ToolExecutor, anthropicTools } from './tools';
 import { APIClient, StreamCallbacks, Provider } from './api-client';
 import { MCPClient, MCPServerConfig } from './mcp-client';
+import { createChatRequestHandler } from './chat-participant';
 
 const exec = util.promisify(cp.exec);
 
 export function activate(context: vscode.ExtensionContext) {
 	console.log('Code Pilot AI extension is being activated!');
 	const provider = new ClaudeChatProvider(context.extensionUri, context);
+
+	// Register Chat Participant for native markdown rendering
+	const chatHandler = createChatRequestHandler(context);
+	const participantDisposable = vscode.chat.createChatParticipant('code-pilot-ai', chatHandler);
+	participantDisposable.iconPath = vscode.Uri.joinPath(context.extensionUri, 'icon.png');
+	participantDisposable.followupProvider = {
+		provideFollowups: () => [
+			{ prompt: 'Help me with code review', label: 'Code Review' },
+			{ prompt: 'Explain this code', label: 'Explain Code' },
+			{ prompt: 'Find bugs in my code', label: 'Find Bugs' }
+		]
+	};
 
 	const disposable = vscode.commands.registerCommand('code-pilot-ai.openChat', () => {
 		console.log('Code Pilot AI command executed!');
@@ -471,7 +484,14 @@ class ClaudeChatProvider {
 				this._executeSlashCommand(message.command);
 				return;
 			case 'showHelp':
+			case 'getHelpContent':
 				this._showHelp();
+				return;
+			case 'openNativeChatHelp':
+				this._openNativeChatHelp();
+				return;
+			case 'openMarkdownPreview':
+				this._openMarkdownPreview();
 				return;
 			case 'deleteConversation':
 				this._deleteConversation(message.filename);
@@ -2306,6 +2326,44 @@ class ClaudeChatProvider {
 			type: 'terminalOpened',
 			data: `Executing /${command} command in terminal. Check the terminal output and return when ready.`,
 		});
+	}
+
+	private async _openNativeChatHelp(): Promise<void> {
+		try {
+			// Open VS Code's native chat panel with the @code-pilot-ai /help command
+			// This uses VS Code's built-in MarkdownString rendering for proper markdown display
+			await vscode.commands.executeCommand('workbench.action.chat.open', {
+				query: '@code-pilot-ai /help'
+			});
+		} catch (error) {
+			console.error('Error opening native chat help:', error);
+			// Fallback to showing help in webview if native chat fails
+			this._showHelp();
+		}
+	}
+
+	private async _openMarkdownPreview(): Promise<void> {
+		try {
+			// Open the README.md file in VS Code's native Markdown preview
+			const extensionPath = this._context.extensionPath;
+			const readmePath = path.join(extensionPath, 'README.md');
+			const readmeUri = vscode.Uri.file(readmePath);
+
+			// Check if file exists
+			try {
+				await vscode.workspace.fs.stat(readmeUri);
+			} catch {
+				vscode.window.showErrorMessage('README.md not found.');
+				return;
+			}
+
+			// Open the markdown preview using VS Code's built-in command
+			// This renders markdown exactly like VS Code's native preview
+			await vscode.commands.executeCommand('markdown.showPreview', readmeUri);
+		} catch (error) {
+			console.error('Error opening markdown preview:', error);
+			vscode.window.showErrorMessage('Failed to open help documentation.');
+		}
 	}
 
 	private async _showHelp(): Promise<void> {

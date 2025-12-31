@@ -5,6 +5,7 @@ const html = `<!DOCTYPE html>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Code Pilot AI</title>
+	<script src="https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js"></script>
 	${styles}
 </head>
 <body>
@@ -2176,8 +2177,8 @@ const html = `<!DOCTYPE html>
 			// Handle commands locally
 			switch (command) {
 				case 'help':
-					// Request README content from extension
-					vscode.postMessage({ type: 'showHelp' });
+					// Request README content from extension to display in chat
+					vscode.postMessage({ type: 'getHelpContent' });
 					break;
 				case 'clear':
 					// Clear the chat messages locally
@@ -3048,17 +3049,28 @@ const html = `<!DOCTYPE html>
 					if (isHeader) {
 						tableHtml += '<thead><tr>';
 						cells.forEach(cell => {
-							tableHtml += '<th>' + cell.trim() + '</th>';
+							let cellContent = cell.trim();
+							// Process bold text in header cells
+							cellContent = cellContent.replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>');
+							tableHtml += '<th>' + cellContent + '</th>';
 						});
 						tableHtml += '</tr></thead><tbody>';
 						isHeader = false;
 					} else {
 						tableHtml += '<tr>';
 						cells.forEach(cell => {
-							// Process links in table cells
+							// Process formatting in table cells
 							let cellContent = cell.trim();
+							// Bold text
+							cellContent = cellContent.replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>');
+							// Italic text
+							cellContent = cellContent.replace(/(?<!\\*)\\*(?!\\*)(.*?)\\*(?!\\*)/g, '<em>$1</em>');
+							// Links [text](url)
 							cellContent = cellContent.replace(/\\[([^\\]]+)\\]\\(([^)]+)\\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+							// Auto-link plain URLs
 							cellContent = cellContent.replace(/(?<!href=")(?<!">)(https?:\\/\\/[^\\s<]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
+							// Inline code
+							cellContent = cellContent.replace(/\\\`([^\\\`]+)\\\`/g, '<code>$1</code>');
 							tableHtml += '<td>' + cellContent + '</td>';
 						});
 						tableHtml += '</tr>';
@@ -3401,17 +3413,38 @@ const html = `<!DOCTYPE html>
 		}
 
 		function displayHelpContent(content) {
-			// Parse markdown and display as a help message
-			const helpHtml = parseSimpleMarkdown(content);
+			// Use markdown-it library (same as VS Code uses) for proper markdown parsing
+			let helpHtml = '';
+
+			// Check if markdownit is available
+			if (typeof markdownit !== 'undefined') {
+				try {
+					// Create markdown-it instance with VS Code-like settings
+					const md = markdownit({
+						html: true,
+						linkify: true,
+						typographer: true,
+						breaks: false
+					});
+					helpHtml = md.render(content);
+				} catch (error) {
+					console.warn('markdown-it parsing failed, using fallback:', error);
+					helpHtml = parseSimpleMarkdown(content);
+				}
+			} else {
+				// Fallback
+				helpHtml = parseSimpleMarkdown(content);
+			}
 
 			const messagesDiv = document.getElementById('messages');
 			const shouldScroll = shouldAutoScroll(messagesDiv);
 
+			// Create the help content container - no rounded box, just clean markdown
 			const messageDiv = document.createElement('div');
-			messageDiv.className = 'message system help-content';
+			messageDiv.className = 'markdown-preview-content';
 
 			const contentDiv = document.createElement('div');
-			contentDiv.className = 'message-content help-message';
+			contentDiv.className = 'vscode-markdown-body';
 			contentDiv.innerHTML = helpHtml;
 
 			messageDiv.appendChild(contentDiv);
