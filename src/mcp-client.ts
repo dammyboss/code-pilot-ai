@@ -50,6 +50,41 @@ class MCPServerConnection {
         this.serverName = serverName;
         this.config = config;
         this.outputChannel = outputChannel;
+
+        // Validate configuration
+        this.validateConfig();
+    }
+
+    private validateConfig(): void {
+        if (!this.config.url && !this.config.command) {
+            const error = `MCP server '${this.serverName}' must have either 'url' (for remote server) or 'command' (for local server)`;
+            this.outputChannel.appendLine(`[${this.serverName}] Configuration error: ${error}`);
+            throw new Error(error);
+        }
+
+        if (this.config.url && this.config.command) {
+            this.outputChannel.appendLine(`[${this.serverName}] Warning: Both 'url' and 'command' specified. Will use remote connection (url).`);
+        }
+
+        // Validate remote server config
+        if (this.config.url) {
+            try {
+                new URL(this.config.url);
+            } catch (e) {
+                const error = `Invalid URL for MCP server '${this.serverName}': ${this.config.url}`;
+                this.outputChannel.appendLine(`[${this.serverName}] Configuration error: ${error}`);
+                throw new Error(error);
+            }
+        }
+
+        // Validate local server config
+        if (this.config.command && !this.config.url) {
+            if (typeof this.config.command !== 'string' || this.config.command.trim() === '') {
+                const error = `Invalid command for MCP server '${this.serverName}': command must be a non-empty string`;
+                this.outputChannel.appendLine(`[${this.serverName}] Configuration error: ${error}`);
+                throw new Error(error);
+            }
+        }
     }
 
     async connect(): Promise<void> {
@@ -83,13 +118,26 @@ class MCPServerConnection {
             });
 
             this.process.on('error', (error) => {
-                this.outputChannel.appendLine(`[${this.serverName}] Process error: ${error.message}`);
+                const errorMsg = `MCP server '${this.serverName}' process error: ${error.message}`;
+                this.outputChannel.appendLine(`[${this.serverName}] ${errorMsg}`);
+
+                // Show error notification
+                vscode.window.showErrorMessage(errorMsg, 'Open Output').then(selection => {
+                    if (selection === 'Open Output') {
+                        this.outputChannel.show();
+                    }
+                });
+
                 reject(error);
             });
 
             this.process.on('close', (code) => {
                 this.outputChannel.appendLine(`[${this.serverName}] Process closed with code ${code}`);
                 this.isConnected = false;
+
+                if (code !== 0 && code !== null) {
+                    vscode.window.showWarningMessage(`MCP server '${this.serverName}' exited with code ${code}`);
+                }
             });
 
             // Initialize the connection
@@ -97,8 +145,23 @@ class MCPServerConnection {
                 try {
                     await this.initialize();
                     this.isConnected = true;
+                    this.outputChannel.appendLine(`[${this.serverName}] Connected to local MCP server with ${this.tools.length} tools`);
+
+                    // Notify user of successful connection
+                    vscode.window.showInformationMessage(`MCP server '${this.serverName}' connected successfully with ${this.tools.length} tools`);
+
                     resolve();
-                } catch (error) {
+                } catch (error: any) {
+                    const errorMsg = `Failed to initialize MCP server '${this.serverName}': ${error.message}`;
+                    this.outputChannel.appendLine(`[${this.serverName}] ${errorMsg}`);
+
+                    // Show error notification
+                    vscode.window.showErrorMessage(errorMsg, 'Open Output').then(selection => {
+                        if (selection === 'Open Output') {
+                            this.outputChannel.show();
+                        }
+                    });
+
                     reject(error);
                 }
             }, 500);
@@ -166,8 +229,20 @@ class MCPServerConnection {
 
             this.isConnected = true;
             this.outputChannel.appendLine(`[${this.serverName}] Connected to remote MCP server with ${this.tools.length} tools`);
+
+            // Notify user of successful connection
+            vscode.window.showInformationMessage(`MCP server '${this.serverName}' connected successfully with ${this.tools.length} tools`);
         } catch (error: any) {
-            this.outputChannel.appendLine(`[${this.serverName}] Failed to connect: ${error.message}`);
+            const errorMsg = `Failed to connect to MCP server '${this.serverName}': ${error.message}`;
+            this.outputChannel.appendLine(`[${this.serverName}] ${errorMsg}`);
+
+            // Show error notification to user
+            vscode.window.showErrorMessage(errorMsg, 'Open Output').then(selection => {
+                if (selection === 'Open Output') {
+                    this.outputChannel.show();
+                }
+            });
+
             throw error;
         }
     }

@@ -7,7 +7,8 @@
       "Bash(rg:*)",
       "Bash(npx tsc:*)",
       "Bash(npx vsce:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(code:*)"
     ],
     "deny": []
   },

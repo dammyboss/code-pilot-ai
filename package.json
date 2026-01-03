@@ -59,6 +59,11 @@
         "title": "Open Code Pilot AI",
         "category": "Code Pilot AI",
         "icon": "icon.png"
+      },
+      {
+        "command": "code-pilot-ai.configureMCP",
+        "title": "Configure MCP Servers",
+        "category": "Code Pilot AI"
       }
     ],
     "keybindings": [
@@ -291,6 +296,56 @@
           "type": "boolean",
           "default": true,
           "description": "Include README file content in context"
+        },
+        "codePilotAI.mcp.servers": {
+          "type": "array",
+          "default": [],
+          "description": "MCP (Model Context Protocol) servers configuration. Add your MCP servers here for extended functionality.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Unique name for this MCP server"
+              },
+              "type": {
+                "type": "string",
+                "enum": ["local", "remote"],
+                "description": "Type of MCP server: 'local' for stdio-based servers, 'remote' for HTTP-based servers"
+              },
+              "url": {
+                "type": "string",
+                "description": "URL for remote MCP servers (e.g., 'https://my-mcp-server.com/api/mcp' or 'my-mcp-server.com/api/mcp')"
+              },
+              "command": {
+                "type": "string",
+                "description": "Command to run for local MCP servers (e.g., 'node', 'python', 'npx')"
+              },
+              "args": {
+                "type": "array",
+                "description": "Arguments for the command (local servers only)",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "env": {
+                "type": "object",
+                "description": "Environment variables for the server (local servers only)",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "headers": {
+                "type": "object",
+                "description": "HTTP headers for remote servers (remote servers only)",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": ["name"]
+          },
+          "markdownDescription": "Configure MCP servers to extend Code Pilot AI's capabilities.\n\n**Example Remote Server:**\n```json\n{\n  \"name\": \"my-remote-server\",\n  \"type\": \"remote\",\n  \"url\": \"https://my-server.com/api/mcp\"\n}\n```\n\n**Example Local Server:**\n```json\n{\n  \"name\": \"my-local-server\",\n  \"type\": \"local\",\n  \"command\": \"node\",\n  \"args\": [\"/path/to/server.js\"],\n  \"env\": {\n    \"API_KEY\": \"your-key\"\n  }\n}\n```"
         }
       }
     }

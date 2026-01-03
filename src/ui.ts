@@ -122,12 +122,6 @@ const html = `<!DOCTYPE html>
 					<textarea class="input-field" id="messageInput" placeholder="Type your message..." rows="1" style="font-size: 14px;"></textarea>
 					<div class="input-controls">
 						<div class="left-controls">
-							<button class="tools-btn" onclick="showMCPModal()" title="Configure MCP servers" style="font-size: 12px; padding: 3px 8px;">
-								MCP
-								<svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor">
-									<path d="M1 2.5l3 3 3-3"></path>
-								</svg>
-							</button>
 							<select id="modelSelector" class="model-selector" onchange="onModelSelectorChange()" title="Select model" style="font-size: 12px;">
 								<option value="claude-sonnet-4-20250514">Claude Sonnet 4</option>
 								<option value="claude-opus-4-20250514">Claude Opus 4</option>
@@ -189,8 +183,24 @@ const html = `<!DOCTYPE html>
 		</button>
 	</div>
 
-			<div id="yoloWarning" class="yolo-warning" style="display: none;">
-			⚠️ Auto-Approve Mode Active: All tool requests will be automatically approved.
+			<div id="yoloWarning" class="yolo-warning-new" style="display: none;">
+			<div class="yolo-warning-icon">
+				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+					<line x1="12" y1="9" x2="12" y2="13"/>
+					<line x1="12" y1="17" x2="12.01" y2="17"/>
+				</svg>
+			</div>
+			<div class="yolo-warning-content">
+				<div class="yolo-warning-title">Auto-Approve Mode Active</div>
+				<div class="yolo-warning-description">All tool and command requests will be automatically approved without confirmation</div>
+			</div>
+			<button class="yolo-warning-dismiss" onclick="dismissYoloWarning()" title="Dismiss">
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<line x1="18" y1="6" x2="6" y2="18"/>
+					<line x1="6" y1="6" x2="18" y2="18"/>
+				</svg>
+			</button>
 		</div>
 
 	<!-- File picker modal -->
@@ -206,82 +216,6 @@ const html = `<!DOCTYPE html>
 		</div>
 	</div>
 
-	<!-- MCP Servers modal -->
-	<div id="mcpModal" class="tools-modal" style="display: none;">
-		<div class="tools-modal-content" style="width: 480px;">
-			<div class="tools-modal-header">
-				<span>MCP Servers</span>
-				<button class="tools-close-btn" onclick="hideMCPModal()">✕</button>
-			</div>
-
-			<!-- MCP Type Tabs at modal level -->
-			<div class="settings-tabs">
-				<button class="settings-tab active" id="mcpTabLocal" onclick="switchMCPTab('local')">Local MCP</button>
-				<button class="settings-tab" id="mcpTabRemote" onclick="switchMCPTab('remote')">Remote MCP</button>
-			</div>
-
-			<div class="tools-list" style="padding-top: 12px;">
-				<!-- Local MCP Tab Content -->
-				<div id="localMCPTabContent" class="settings-tab-content">
-					<p style="font-size: 11px; color: var(--vscode-descriptionForeground); margin: 0 0 12px 0;">
-						Local MCP servers run on your machine via command line (stdio).
-					</p>
-					<div class="mcp-servers-list" id="localServersList">
-						<!-- Local servers will be loaded here -->
-					</div>
-					<div class="mcp-add-form" id="localServerForm">
-						<div class="form-group">
-							<label for="localServerName" style="font-size: 11px;">Server Name: <span style="color: var(--vscode-errorForeground);">*</span></label>
-							<input type="text" id="localServerName" placeholder="my-local-server" required style="font-size: 11px; padding: 6px 8px;">
-						</div>
-						<div class="form-group">
-							<label for="serverCommand" style="font-size: 11px;">Command: <span style="color: var(--vscode-errorForeground);">*</span></label>
-							<input type="text" id="serverCommand" placeholder="npx, python, node..." style="font-size: 11px; padding: 6px 8px;">
-						</div>
-						<div class="form-group">
-							<label for="serverArgs" style="font-size: 11px;">Arguments (one per line):</label>
-							<textarea id="serverArgs" placeholder="-m&#10;mcp_server&#10;--option" rows="3" style="font-size: 11px; padding: 6px 8px; resize: vertical; width: 100%; box-sizing: border-box;"></textarea>
-						</div>
-						<div class="form-group">
-							<label for="serverEnv" style="font-size: 11px;">Environment Variables (KEY=VALUE, one per line):</label>
-							<textarea id="serverEnv" placeholder="API_KEY=xxx&#10;DEBUG=true" rows="2" style="font-size: 11px; padding: 6px 8px; resize: vertical; width: 100%; box-sizing: border-box;"></textarea>
-						</div>
-						<div class="form-buttons">
-							<button class="btn" onclick="saveLocalMCPServer()" style="font-size: 11px; padding: 6px 12px;">Add Local Server</button>
-						</div>
-					</div>
-				</div>
-
-				<!-- Remote MCP Tab Content -->
-				<div id="remoteMCPTabContent" class="settings-tab-content" style="display: none;">
-					<p style="font-size: 11px; color: var(--vscode-descriptionForeground); margin: 0 0 12px 0;">
-						Remote MCP servers connect over HTTP/HTTPS to external services.
-					</p>
-					<div class="mcp-servers-list" id="remoteServersList">
-						<!-- Remote servers will be loaded here -->
-					</div>
-					<div class="mcp-add-form" id="remoteServerForm">
-						<div class="form-group">
-							<label for="remoteServerName" style="font-size: 11px;">Server Name: <span style="color: var(--vscode-errorForeground);">*</span></label>
-							<input type="text" id="remoteServerName" placeholder="my-remote-server" required style="font-size: 11px; padding: 6px 8px;">
-						</div>
-						<div class="form-group">
-							<label for="serverUrl" style="font-size: 11px;">Remote MCP URL: <span style="color: var(--vscode-errorForeground);">*</span></label>
-							<input type="text" id="serverUrl" placeholder="https://example.com/mcp" style="font-size: 11px; padding: 6px 8px;">
-						</div>
-						<div class="form-group">
-							<label for="serverHeaders" style="font-size: 11px;">Headers (KEY=VALUE, one per line):</label>
-							<textarea id="serverHeaders" placeholder="Authorization=Bearer xxx&#10;X-Custom-Header=value" rows="2" style="font-size: 11px; padding: 6px 8px; resize: vertical; width: 100%; box-sizing: border-box;"></textarea>
-						</div>
-						<div class="form-buttons">
-							<button class="btn" onclick="saveRemoteMCPServer()" style="font-size: 11px; padding: 6px 12px;">Add Remote Server</button>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
-
 	<!-- Settings modal -->
 	<div id="settingsModal" class="tools-modal" style="display: none;">
 		<div class="tools-modal-content" style="width: 500px;">
@@ -293,6 +227,7 @@ const html = `<!DOCTYPE html>
 			<!-- Settings Tabs -->
 			<div class="settings-tabs">
 				<button class="settings-tab active" id="tabModel" onclick="switchSettingsTab('model')">Model Configuration</button>
+				<button class="settings-tab" id="tabMCP" onclick="switchSettingsTab('mcp')">MCP Servers</button>
 				<button class="settings-tab" id="tabWSL" onclick="switchSettingsTab('wsl')">WSL Configuration</button>
 				<button class="settings-tab" id="tabPermissions" onclick="switchSettingsTab('permissions')">Permissions</button>
 			</div>
@@ -358,6 +293,85 @@ const html = `<!DOCTYPE html>
 					</div>
 				</div>
 
+				<!-- MCP Servers Tab -->
+				<div id="mcpTabContent" class="settings-tab-content" style="display: none;">
+					<div style="margin-bottom: 16px;">
+						<p style="font-size: 11px; color: var(--vscode-descriptionForeground); margin: 0 0 12px 0;">
+							Manage Model Context Protocol (MCP) servers to extend Code Pilot AI's capabilities with specialized tools and integrations.
+						</p>
+					</div>
+
+					<!-- Server List -->
+					<div id="mcpServerList" class="mcp-server-list" style="margin-bottom: 16px;">
+						<div style="text-align: center; padding: 20px; color: var(--vscode-descriptionForeground); font-size: 11px;">
+							Loading MCP servers...
+						</div>
+					</div>
+
+					<!-- Add Server Section -->
+					<div class="mcp-add-server-section">
+						<button id="showAddMCPServerBtn" class="btn outlined" onclick="showAddMCPServerForm()" style="font-size: 11px; width: 100%;">
+							+ Add New MCP Server
+						</button>
+
+						<div id="addMCPServerForm" class="mcp-add-form" style="display: none; margin-top: 16px; border: 1px solid var(--vscode-widget-border); border-radius: 6px; padding: 16px;">
+							<h4 style="margin: 0 0 12px 0; font-size: 12px;">Add MCP Server</h4>
+
+							<!-- Server Type Selection -->
+							<div style="margin-bottom: 12px;">
+								<label style="display: block; margin-bottom: 6px; font-size: 11px; font-weight: 600;">Server Type</label>
+								<div style="display: flex; gap: 8px;">
+									<button class="mcp-type-btn active" id="mcpTypeRemote" onclick="selectMCPType('remote')" style="flex: 1; padding: 8px; font-size: 11px; border: 1px solid var(--vscode-button-background); border-radius: 4px; background: var(--vscode-button-background); color: var(--vscode-button-foreground); cursor: pointer;">
+										Remote (HTTP)
+									</button>
+									<button class="mcp-type-btn" id="mcpTypeLocal" onclick="selectMCPType('local')" style="flex: 1; padding: 8px; font-size: 11px; border: 1px solid var(--vscode-widget-border); border-radius: 4px; background: transparent; cursor: pointer;">
+										Local (stdio)
+									</button>
+								</div>
+							</div>
+
+							<!-- Server Name -->
+							<div style="margin-bottom: 12px;">
+								<label style="display: block; margin-bottom: 4px; font-size: 11px; color: var(--vscode-descriptionForeground);">Server Name *</label>
+								<input type="text" id="mcpServerName" class="file-search-input" style="width: 100%; font-size: 11px;" placeholder="e.g., my-mcp-server">
+							</div>
+
+							<!-- Remote Server Fields -->
+							<div id="mcpRemoteFields">
+								<div style="margin-bottom: 12px;">
+									<label style="display: block; margin-bottom: 4px; font-size: 11px; color: var(--vscode-descriptionForeground);">Server URL *</label>
+									<input type="text" id="mcpServerURL" class="file-search-input" style="width: 100%; font-size: 11px;" placeholder="https://my-server.com/api/mcp or my-server.com/api/mcp">
+									<div style="font-size: 10px; color: var(--vscode-descriptionForeground); margin-top: 4px;">
+										Protocol (https://) will be added automatically if not specified
+									</div>
+								</div>
+							</div>
+
+							<!-- Local Server Fields -->
+							<div id="mcpLocalFields" style="display: none;">
+								<div style="margin-bottom: 12px;">
+									<label style="display: block; margin-bottom: 4px; font-size: 11px; color: var(--vscode-descriptionForeground);">Command *</label>
+									<input type="text" id="mcpServerCommand" class="file-search-input" style="width: 100%; font-size: 11px;" placeholder="e.g., node, python, dotnet">
+								</div>
+								<div style="margin-bottom: 12px;">
+									<label style="display: block; margin-bottom: 4px; font-size: 11px; color: var(--vscode-descriptionForeground);">Arguments (comma-separated)</label>
+									<input type="text" id="mcpServerArgs" class="file-search-input" style="width: 100%; font-size: 11px;" placeholder="e.g., /path/to/server.js, --port, 3000">
+								</div>
+								<div style="margin-bottom: 12px;">
+									<label style="display: block; margin-bottom: 4px; font-size: 11px; color: var(--vscode-descriptionForeground);">Environment Variables (KEY=VALUE, comma-separated)</label>
+									<textarea id="mcpServerEnv" class="file-search-input" style="width: 100%; font-size: 11px; min-height: 60px; font-family: monospace;" placeholder="API_KEY=your-key, DEBUG=true"></textarea>
+								</div>
+							</div>
+
+							<!-- Action Buttons -->
+							<div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px;">
+								<button class="btn outlined" onclick="cancelAddMCPServer()" style="font-size: 11px; padding: 6px 16px;">Cancel</button>
+								<button class="btn primary" onclick="saveMCPServer()" style="font-size: 11px; padding: 6px 16px;">Add Server</button>
+							</div>
+						</div>
+					</div>
+				</div>
+
 				<!-- WSL Configuration Tab -->
 				<div id="wslTabContent" class="settings-tab-content" style="display: none;">
 					<div>
@@ -392,48 +406,85 @@ const html = `<!DOCTYPE html>
 
 				<!-- Permissions Tab -->
 				<div id="permissionsTabContent" class="settings-tab-content" style="display: none;">
-					<div>
-						<p style="font-size: 11px; color: var(--vscode-descriptionForeground); margin: 0 0 12px 0;">
-							Manage commands and tools that are automatically allowed without asking for permission.
-						</p>
+					<!-- Header Section -->
+					<div class="permissions-header">
+						<div class="permissions-header-content">
+							<h3 style="margin: 0; font-size: 13px; font-weight: 600;">Permission Management</h3>
+							<p style="font-size: 11px; color: var(--vscode-descriptionForeground); margin: 4px 0 0 0;">
+								Control which tools and commands can run automatically without asking for approval
+							</p>
+						</div>
 					</div>
-					<div class="settings-group">
-						<div id="permissionsList" class="permissions-list">
-							<div class="permissions-loading" style="text-align: center; padding: 20px; color: var(--vscode-descriptionForeground);">
-								Loading permissions...
+
+					<!-- Auto-Approve Mode Card -->
+					<div class="yolo-mode-card">
+						<div class="yolo-mode-icon">
+							<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+								<path d="M9 12l2 2 4-4"/>
+							</svg>
+						</div>
+						<div class="yolo-mode-content">
+							<div class="yolo-mode-title">Auto-Approve Mode</div>
+							<div class="yolo-mode-description">Skip all permission requests and automatically approve all tool usage</div>
+						</div>
+						<div class="yolo-mode-toggle">
+							<input type="checkbox" id="yolo-mode" class="toggle-checkbox" onchange="updateYoloWarning();">
+							<label for="yolo-mode" class="toggle-label"></label>
+						</div>
+					</div>
+
+					<!-- Permissions List Section -->
+					<div class="permissions-section">
+						<div class="permissions-section-header">
+							<span style="font-size: 12px; font-weight: 600;">Always-Allow Permissions</span>
+							<button id="showAddPermissionBtn" class="permissions-add-btn-new" onclick="showAddPermissionForm()">
+								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<line x1="12" y1="5" x2="12" y2="19"/>
+									<line x1="5" y1="12" x2="19" y2="12"/>
+								</svg>
+								Add Permission
+							</button>
+						</div>
+
+						<!-- Add Permission Form -->
+						<div id="addPermissionForm" class="permissions-add-form-new" style="display: none;">
+							<div class="add-form-content">
+								<div class="form-field">
+									<label style="font-size: 11px; font-weight: 600; margin-bottom: 6px; display: block;">Tool</label>
+									<select id="addPermissionTool" class="permissions-tool-select-new" onchange="toggleCommandInput()">
+										<option value="">Select a tool...</option>
+										<option value="Bash">Bash - Execute shell commands</option>
+										<option value="Read">Read - Read file contents</option>
+										<option value="Edit">Edit - Modify files</option>
+										<option value="Write">Write - Create new files</option>
+										<option value="MultiEdit">MultiEdit - Batch file edits</option>
+										<option value="Glob">Glob - Find files by pattern</option>
+										<option value="Grep">Grep - Search file contents</option>
+										<option value="LS">LS - List directory contents</option>
+										<option value="WebSearch">WebSearch - Search the web</option>
+										<option value="WebFetch">WebFetch - Fetch web content</option>
+									</select>
+								</div>
+								<div class="form-field" id="commandFieldContainer" style="display: none;">
+									<label style="font-size: 11px; font-weight: 600; margin-bottom: 6px; display: block;">Command Pattern</label>
+									<input type="text" id="addPermissionCommand" class="permissions-command-input-new" placeholder="e.g., npm install *, git add *" />
+								</div>
+								<div id="permissionsFormHint" class="permissions-form-hint-new">
+									Select a tool to grant automatic permission
+								</div>
+								<div class="add-form-actions">
+									<button class="btn-cancel" onclick="hideAddPermissionForm()">Cancel</button>
+									<button id="addPermissionBtn" class="btn-confirm" onclick="addPermission()">Add Permission</button>
+								</div>
 							</div>
 						</div>
-						<div class="permissions-add-section">
-							<div id="addPermissionForm" class="permissions-add-form" style="display: none;">
-								<div class="permissions-form-row">
-									<select id="addPermissionTool" class="permissions-tool-select" onchange="toggleCommandInput()">
-										<option value="">Select tool...</option>
-										<option value="Bash">Bash</option>
-										<option value="Read">Read</option>
-										<option value="Edit">Edit</option>
-										<option value="Write">Write</option>
-										<option value="MultiEdit">MultiEdit</option>
-										<option value="Glob">Glob</option>
-										<option value="Grep">Grep</option>
-										<option value="LS">LS</option>
-										<option value="WebSearch">WebSearch</option>
-										<option value="WebFetch">WebFetch</option>
-									</select>
-									<div style="flex-grow: 1; display: flex;">
-										<input type="text" id="addPermissionCommand" class="permissions-command-input" placeholder="Command pattern (e.g., npm i *)" style="display: none;" />
-									</div>
-									<button id="addPermissionBtn" class="permissions-add-btn" onclick="addPermission()">Add</button>
-								</div>
-								<div id="permissionsFormHint" class="permissions-form-hint">
-									Select a tool to add always-allow permission.
-								</div>
-							</div>
-							<button id="showAddPermissionBtn" class="permissions-show-add-btn" onclick="showAddPermissionForm()">
-								+ Add permission
-							</button>
-							<div class="yolo-mode-section">
-								<input type="checkbox" id="yolo-mode" onchange="updateYoloWarning();">
-								<label for="yolo-mode">Enable Auto-Approve Mode (Auto-allow all permissions)</label>
+
+						<!-- Permissions List -->
+						<div id="permissionsList" class="permissions-list-new">
+							<div class="permissions-loading" style="text-align: center; padding: 40px 20px; color: var(--vscode-descriptionForeground);">
+								<div style="font-size: 32px; margin-bottom: 8px;">⏳</div>
+								<div style="font-size: 11px;">Loading permissions...</div>
 							</div>
 						</div>
 					</div>
@@ -1770,22 +1821,29 @@ const html = `<!DOCTYPE html>
 		});
 
 		// Tools modal functions
-		function showMCPModal() {
-			document.getElementById('mcpModal').style.display = 'flex';
-			// Load existing MCP servers
-			loadMCPServers();
-		}
-		
 		function updateYoloWarning() {
 			const yoloModeCheckbox = document.getElementById('yolo-mode');
 			const warning = document.getElementById('yoloWarning');
-			
+
 			if (!yoloModeCheckbox || !warning) {
 				return; // Elements not ready yet
 			}
-			
+
 			const yoloMode = yoloModeCheckbox.checked;
-			warning.style.display = yoloMode ? 'block' : 'none';
+			if (yoloMode) {
+				warning.style.display = 'flex';
+				// Trigger animation
+				setTimeout(() => warning.classList.add('visible'), 10);
+			} else {
+				warning.classList.remove('visible');
+				setTimeout(() => warning.style.display = 'none', 300);
+			}
+		}
+
+		function dismissYoloWarning() {
+			const warning = document.getElementById('yoloWarning');
+			warning.classList.remove('visible');
+			setTimeout(() => warning.style.display = 'none', 300);
 		}
 		
 		function isPermissionError(content) {
@@ -1821,304 +1879,6 @@ const html = `<!DOCTYPE html>
 				
 				// Update the warning banner
 				updateYoloWarning();
-			}
-		}
-
-		function hideMCPModal() {
-			document.getElementById('mcpModal').style.display = 'none';
-			hideAddServerForm();
-		}
-
-		// Close MCP modal when clicking outside
-		document.getElementById('mcpModal').addEventListener('click', (e) => {
-			if (e.target === document.getElementById('mcpModal')) {
-				hideMCPModal();
-			}
-		});
-
-		// MCP Server management functions
-		function loadMCPServers() {
-			vscode.postMessage({ type: 'loadMCPServers' });
-		}
-
-		let currentMCPTab = 'local';
-
-		// Switch between Local and Remote MCP tabs
-		function switchMCPTab(tab) {
-			currentMCPTab = tab;
-
-			// Update tab buttons
-			document.getElementById('mcpTabLocal').classList.toggle('active', tab === 'local');
-			document.getElementById('mcpTabRemote').classList.toggle('active', tab === 'remote');
-
-			// Update tab content
-			document.getElementById('localMCPTabContent').style.display = tab === 'local' ? 'block' : 'none';
-			document.getElementById('remoteMCPTabContent').style.display = tab === 'remote' ? 'block' : 'none';
-		}
-
-		function showNotification(message, isError = true) {
-			const notification = document.createElement('div');
-			notification.textContent = message;
-			notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: ' +
-				(isError ? 'var(--vscode-inputValidation-errorBackground)' : 'var(--vscode-testing-iconPassed)') +
-				'; color: ' + (isError ? 'var(--vscode-inputValidation-errorForeground)' : '#fff') +
-				'; padding: 8px 12px; border-radius: 4px; z-index: 9999;';
-			document.body.appendChild(notification);
-			setTimeout(() => notification.remove(), 3000);
-		}
-
-		function clearLocalServerForm() {
-			document.getElementById('localServerName').value = '';
-			document.getElementById('serverCommand').value = '';
-			document.getElementById('serverArgs').value = '';
-			document.getElementById('serverEnv').value = '';
-		}
-
-		function clearRemoteServerForm() {
-			document.getElementById('remoteServerName').value = '';
-			document.getElementById('serverUrl').value = '';
-			document.getElementById('serverHeaders').value = '';
-		}
-
-		function saveLocalMCPServer() {
-			const name = document.getElementById('localServerName').value.trim();
-			const command = document.getElementById('serverCommand').value.trim();
-			const argsText = document.getElementById('serverArgs').value.trim();
-			const envText = document.getElementById('serverEnv').value.trim();
-
-			if (!name) {
-				showNotification('Server name is required');
-				return;
-			}
-
-			if (!command) {
-				showNotification('Command is required');
-				return;
-			}
-
-			const args = argsText ? argsText.split('\\n').map(a => a.trim()).filter(a => a) : [];
-			const env = {};
-			if (envText) {
-				envText.split('\\n').forEach(line => {
-					const [key, ...valueParts] = line.split('=');
-					if (key && valueParts.length > 0) {
-						env[key.trim()] = valueParts.join('=').trim();
-					}
-				});
-			}
-
-			const serverConfig = {
-				type: 'stdio',
-				command: command,
-				args: args
-			};
-
-			if (Object.keys(env).length > 0) {
-				serverConfig.env = env;
-			}
-
-			vscode.postMessage({
-				type: 'saveMCPServer',
-				name: name,
-				config: serverConfig
-			});
-
-			clearLocalServerForm();
-			showNotification('Local server added successfully', false);
-		}
-
-		function saveRemoteMCPServer() {
-			const name = document.getElementById('remoteServerName').value.trim();
-			const url = document.getElementById('serverUrl').value.trim();
-			const headersText = document.getElementById('serverHeaders').value.trim();
-
-			if (!name) {
-				showNotification('Server name is required');
-				return;
-			}
-
-			if (!url) {
-				showNotification('Remote MCP URL is required');
-				return;
-			}
-
-			const headers = {};
-			if (headersText) {
-				headersText.split('\\n').forEach(line => {
-					const [key, ...valueParts] = line.split('=');
-					if (key && valueParts.length > 0) {
-						headers[key.trim()] = valueParts.join('=').trim();
-					}
-				});
-			}
-
-			const serverConfig = {
-				type: 'http',
-				url: url
-			};
-
-			if (Object.keys(headers).length > 0) {
-				serverConfig.headers = headers;
-			}
-
-			vscode.postMessage({
-				type: 'saveMCPServer',
-				name: name,
-				config: serverConfig
-			});
-
-			clearRemoteServerForm();
-			showNotification('Remote server added successfully', false);
-		}
-
-		// Legacy functions for compatibility
-		function showAddServerForm() {
-			// No longer needed with new tab structure
-		}
-
-		function hideAddServerForm() {
-			clearLocalServerForm();
-			clearRemoteServerForm();
-		}
-
-		function switchMCPType(type) {
-			switchMCPTab(type);
-		}
-
-		function saveMCPServer() {
-			if (currentMCPTab === 'local') {
-				saveLocalMCPServer();
-			} else {
-				saveRemoteMCPServer();
-			}
-		}
-
-		function deleteMCPServer(serverName) {
-			// Just delete without confirmation
-			vscode.postMessage({ 
-				type: 'deleteMCPServer', 
-				name: serverName 
-			});
-		}
-
-		let editingServerName = null;
-
-		function editMCPServer(name, config) {
-			editingServerName = name;
-
-			// Determine server type and switch to appropriate tab
-			const serverType = config.type || 'stdio';
-			if (serverType === 'http' || serverType === 'sse') {
-				switchMCPTab('remote');
-				// Populate remote fields
-				const remoteNameInput = document.getElementById('remoteServerName');
-				const serverUrlInput = document.getElementById('serverUrl');
-				const serverHeadersInput = document.getElementById('serverHeaders');
-
-				if (remoteNameInput) {
-					remoteNameInput.value = name;
-				}
-				if (serverUrlInput && config.url) {
-					serverUrlInput.value = config.url;
-				}
-				if (serverHeadersInput && config.headers) {
-					const headerLines = Object.entries(config.headers).map(([key, value]) => key + '=' + value);
-					serverHeadersInput.value = headerLines.join('\\n');
-				}
-			} else {
-				switchMCPTab('local');
-				// Populate local fields
-				const localNameInput = document.getElementById('localServerName');
-				const serverCommandInput = document.getElementById('serverCommand');
-				const serverArgsInput = document.getElementById('serverArgs');
-				const serverEnvInput = document.getElementById('serverEnv');
-
-				if (localNameInput) {
-					localNameInput.value = name;
-				}
-				if (serverCommandInput && config.command) {
-					serverCommandInput.value = config.command;
-				}
-				if (serverArgsInput && config.args && Array.isArray(config.args)) {
-					serverArgsInput.value = config.args.join('\\n');
-				}
-				if (serverEnvInput && config.env) {
-					const envLines = Object.entries(config.env).map(([key, value]) => key + '=' + value);
-					serverEnvInput.value = envLines.join('\\n');
-				}
-			}
-
-			// Scroll to form
-			const mcpModal = document.getElementById('mcpModal');
-			if (mcpModal) {
-				const toolsList = mcpModal.querySelector('.tools-list');
-				if (toolsList) toolsList.scrollTop = toolsList.scrollHeight;
-			}
-		}
-
-		function addPopularServer(name, config) {
-			// Popular servers section removed - function kept for compatibility
-		}
-
-		function displayMCPServers(servers) {
-			const localServersList = document.getElementById('localServersList');
-			const remoteServersList = document.getElementById('remoteServersList');
-
-			localServersList.innerHTML = '';
-			remoteServersList.innerHTML = '';
-
-			let localCount = 0;
-			let remoteCount = 0;
-
-			for (const [name, config] of Object.entries(servers)) {
-				// Defensive check for config structure
-				if (!config || typeof config !== 'object') {
-					console.error('Invalid config for server:', name, config);
-					continue;
-				}
-
-				const serverType = config.type || 'stdio';
-				const isRemote = serverType === 'http' || serverType === 'sse';
-
-				const serverItem = document.createElement('div');
-				serverItem.className = 'mcp-server-item';
-
-				let configDisplay = '';
-				if (isRemote) {
-					configDisplay = \`URL: \${config.url || 'Not specified'}\`;
-					remoteCount++;
-				} else {
-					configDisplay = \`Command: \${config.command || 'Not specified'}\`;
-					if (config.args && Array.isArray(config.args) && config.args.length > 0) {
-						configDisplay += \` \${config.args.join(' ')}\`;
-					}
-					localCount++;
-				}
-
-				serverItem.innerHTML = \`
-					<div class="server-info">
-						<div class="server-name">\${name}</div>
-						<div class="server-config" style="font-size: 10px; opacity: 0.8; margin-top: 2px;">\${configDisplay}</div>
-					</div>
-					<div class="server-actions">
-						<button class="btn outlined server-edit-btn" onclick="editMCPServer('\${name}', \${JSON.stringify(config).replace(/"/g, '&quot;')})" style="font-size: 10px; padding: 2px 8px;">Edit</button>
-						<button class="btn outlined server-delete-btn" onclick="deleteMCPServer('\${name}')" style="font-size: 10px; padding: 2px 8px;">Delete</button>
-					</div>
-				\`;
-
-				if (isRemote) {
-					remoteServersList.appendChild(serverItem);
-				} else {
-					localServersList.appendChild(serverItem);
-				}
-			}
-
-			// Show empty messages if needed
-			if (localCount === 0) {
-				localServersList.innerHTML = '<div class="no-servers" style="font-size: 11px; opacity: 0.6; padding: 8px 0;">No local servers configured</div>';
-			}
-			if (remoteCount === 0) {
-				remoteServersList.innerHTML = '<div class="no-servers" style="font-size: 11px; opacity: 0.6; padding: 8px 0;">No remote servers configured</div>';
 			}
 		}
 
@@ -2785,19 +2545,27 @@ const html = `<!DOCTYPE html>
 				case 'permissionRequest':
 					addPermissionRequestMessage(message.data);
 					break;
-				case 'mcpServers':
-					displayMCPServers(message.data);
+				case 'mcpServersData':
+					// Render MCP servers in settings tab
+					renderMCPServers(message.data);
 					break;
-				case 'mcpServerSaved':
-					loadMCPServers(); // Reload the servers list
-					addMessage('✅ MCP server "' + message.data.name + '" saved successfully', 'system');
+				case 'mcpServerAdded':
+					// Reload servers and show success message
+					loadMCPServers();
+					addMessage('✅ MCP server "' + message.data.name + '" added successfully. Reload window to connect.', 'system');
 					break;
-				case 'mcpServerDeleted':
-					loadMCPServers(); // Reload the servers list
-					addMessage('✅ MCP server "' + message.data.name + '" deleted successfully', 'system');
+				case 'mcpServerRemoved':
+					// Reload servers
+					loadMCPServers();
+					addMessage('✅ MCP server "' + message.data.name + '" removed successfully', 'system');
 					break;
-				case 'mcpServerError':
-					addMessage('❌ Error with MCP server: ' + message.data.error, 'error');
+				case 'mcpServerConnected':
+					// Reload servers to update status
+					loadMCPServers();
+					break;
+				case 'mcpServerDisconnected':
+					// Reload servers to update status
+					loadMCPServers();
 					break;
 				case 'permissionsData':
 					// Update permissions UI
@@ -2821,49 +2589,94 @@ const html = `<!DOCTYPE html>
 			const shouldScroll = shouldAutoScroll(messagesDiv);
 
 			const messageDiv = document.createElement('div');
-			messageDiv.className = 'message permission-request';
-			
+			messageDiv.className = 'message permission-request-new';
+
 			const toolName = data.tool || 'Unknown Tool';
-			
+
 			// Create always allow button text with command styling for Bash
-			let alwaysAllowText = \`Always allow \${toolName}\`;
+			let alwaysAllowText = \`Always Allow \${toolName}\`;
+			let alwaysAllowDescription = \`Automatically approve all \${toolName} operations\`;
 			let alwaysAllowTooltip = '';
 			if (toolName === 'Bash' && data.pattern) {
 				const pattern = data.pattern;
 				// Remove the asterisk for display - show "npm i" instead of "npm i *"
 				const displayPattern = pattern.replace(' *', '');
-				const truncatedPattern = displayPattern.length > 30 ? displayPattern.substring(0, 30) + '...' : displayPattern;
-				alwaysAllowText = \`Always allow <code>\${truncatedPattern}</code>\`;
-				alwaysAllowTooltip = displayPattern.length > 30 ? \`title="\${displayPattern}"\` : '';
+				const truncatedPattern = displayPattern.length > 40 ? displayPattern.substring(0, 40) + '...' : displayPattern;
+				alwaysAllowText = \`Always Allow: <code>\${truncatedPattern}</code>\`;
+				alwaysAllowDescription = \`Automatically approve this specific command\`;
+				alwaysAllowTooltip = displayPattern.length > 40 ? \`title="\${displayPattern}"\` : '';
 			}
-			
+
 			messageDiv.innerHTML = \`
-				<div class="permission-header">
-					<span class="icon">🔐</span>
-					<span>Permission Required</span>
-					<div class="permission-menu">
-						<button class="permission-menu-btn" onclick="togglePermissionMenu('\${data.id}')" title="More options">⋮</button>
-						<div class="permission-menu-dropdown" id="permissionMenu-\${data.id}" style="display: none;">
-							<button class="permission-menu-item" onclick="enableYoloMode('\${data.id}')">
-								<span class="menu-icon">⚡</span>
-								<div class="menu-content">
-									<span class="menu-title">Enable YOLO Mode</span>
-									<span class="menu-subtitle">Auto-allow all permissions</span>
-								</div>
+				<div class="permission-card-new">
+					<div class="permission-header-new">
+						<div class="permission-title-section">
+							<div class="permission-icon-new">
+								<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+									<path d="M7 11V7a5 5 0 0110 0v4"/>
+								</svg>
+							</div>
+							<div>
+								<div class="permission-title-new">Permission Required</div>
+								<div class="permission-subtitle-new">Review this request before proceeding</div>
+							</div>
+						</div>
+						<div class="permission-menu-new">
+							<button class="permission-menu-btn-new" onclick="togglePermissionMenu('\${data.id}')" title="More options">
+								<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+									<circle cx="12" cy="5" r="2"/>
+									<circle cx="12" cy="12" r="2"/>
+									<circle cx="12" cy="19" r="2"/>
+								</svg>
 							</button>
+							<div class="permission-menu-dropdown-new" id="permissionMenu-\${data.id}" style="display: none;">
+								<button class="permission-menu-item-new" onclick="enableYoloMode('\${data.id}')">
+									<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+										<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+									</svg>
+									<div>
+										<div class="menu-item-title">Enable Auto-Approve Mode</div>
+										<div class="menu-item-subtitle">Auto-allow all future permissions</div>
+									</div>
+								</button>
+							</div>
 						</div>
 					</div>
-				</div>
-				<div class="permission-content">
-					<p>Allow <strong>\${toolName}</strong> to execute the tool call above?</p>
-					<div class="permission-buttons">
-						<button class="btn deny" onclick="respondToPermission('\${data.id}', false)">Deny</button>
-						<button class="btn always-allow" onclick="respondToPermission('\${data.id}', true, true)" \${alwaysAllowTooltip}>\${alwaysAllowText}</button>
-						<button class="btn allow" onclick="respondToPermission('\${data.id}', true)">Allow</button>
+					<div class="permission-body-new">
+						<div class="permission-question">
+							Allow <strong class="tool-name-highlight">\${toolName}</strong> to execute the tool call above?
+						</div>
+					</div>
+					<div class="permission-actions-new">
+						<button class="permission-btn-new deny-btn" onclick="respondToPermission('\${data.id}', false)">
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<circle cx="12" cy="12" r="10"/>
+								<line x1="15" y1="9" x2="9" y2="15"/>
+								<line x1="9" y1="9" x2="15" y2="15"/>
+							</svg>
+							Deny
+						</button>
+						<button class="permission-btn-new always-allow-btn" onclick="respondToPermission('\${data.id}', true, true)" \${alwaysAllowTooltip}>
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+							</svg>
+							<div class="btn-text-content">
+								<span class="btn-main-text">\${alwaysAllowText}</span>
+								<span class="btn-sub-text">\${alwaysAllowDescription}</span>
+							</div>
+						</button>
+						<button class="permission-btn-new allow-btn" onclick="respondToPermission('\${data.id}', true)">
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
+								<polyline points="22 4 12 14.01 9 11.01"/>
+							</svg>
+							Allow Once
+						</button>
 					</div>
 				</div>
 			\`;
-			
+
 			messagesDiv.appendChild(messageDiv);
 			scrollToBottomIfNeeded(messagesDiv, shouldScroll);
 		}
@@ -2876,31 +2689,63 @@ const html = `<!DOCTYPE html>
 				approved: approved,
 				alwaysAllow: alwaysAllow
 			});
-			
+
 			// Update the UI to show the decision
-			const permissionMsg = document.querySelector(\`.permission-request:has([onclick*="\${id}"])\`);
+			const permissionMsg = document.querySelector(\`.permission-request-new:has([onclick*="\${id}"])\`);
 			if (permissionMsg) {
-				const buttons = permissionMsg.querySelector('.permission-buttons');
-				const permissionContent = permissionMsg.querySelector('.permission-content');
-				let decision = approved ? 'You allowed this' : 'You denied this';
-				
+				const card = permissionMsg.querySelector('.permission-card-new');
+				const actionsDiv = permissionMsg.querySelector('.permission-actions-new');
+				const bodyDiv = permissionMsg.querySelector('.permission-body-new');
+
+				let decisionText = approved ? 'Permission Granted' : 'Permission Denied';
+				let decisionDescription = '';
+
 				if (alwaysAllow && approved) {
-					decision = 'You allowed this and set it to always allow';
+					decisionText = 'Permission Granted & Always Allow Set';
+					decisionDescription = 'This permission has been saved and will be auto-approved in the future';
+				} else if (approved) {
+					decisionDescription = 'This operation was allowed for this request only';
+				} else {
+					decisionDescription = 'This operation was denied and will not execute';
 				}
-				
-				const emoji = approved ? '✅' : '❌';
-				const decisionClass = approved ? 'allowed' : 'denied';
-				
-				// Hide buttons
-				buttons.style.display = 'none';
-				
-				// Add decision div to permission-content
+
+				const decisionClass = approved ? 'approved' : 'denied';
+				const icon = approved ? (alwaysAllow ? 'shield-check' : 'check-circle') : 'x-circle';
+
+				// Hide action buttons
+				actionsDiv.style.display = 'none';
+
+				// Add decision status
 				const decisionDiv = document.createElement('div');
-				decisionDiv.className = \`permission-decision \${decisionClass}\`;
-				decisionDiv.innerHTML = \`\${emoji} \${decision}\`;
-				permissionContent.appendChild(decisionDiv);
-				
-				permissionMsg.classList.add('permission-decided', decisionClass);
+				decisionDiv.className = \`permission-decision-new \${decisionClass}\`;
+				decisionDiv.innerHTML = \`
+					<div class="decision-icon">
+						\${icon === 'shield-check' ? \`
+							<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+								<path d="M9 12l2 2 4-4"/>
+							</svg>
+						\` : icon === 'check-circle' ? \`
+							<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
+								<polyline points="22 4 12 14.01 9 11.01"/>
+							</svg>
+						\` : \`
+							<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<circle cx="12" cy="12" r="10"/>
+								<line x1="15" y1="9" x2="9" y2="15"/>
+								<line x1="9" y1="9" x2="15" y2="15"/>
+							</svg>
+						\`}
+					</div>
+					<div class="decision-content">
+						<div class="decision-title">\${decisionText}</div>
+						<div class="decision-description">\${decisionDescription}</div>
+					</div>
+				\`;
+
+				bodyDiv.appendChild(decisionDiv);
+				card.classList.add('permission-resolved', decisionClass);
 			}
 		}
 
@@ -3615,6 +3460,7 @@ const html = `<!DOCTYPE html>
 			// Map tab names to their IDs (handle case sensitivity for WSL)
 			const tabIdMap = {
 				'model': 'tabModel',
+				'mcp': 'tabMCP',
 				'wsl': 'tabWSL',
 				'permissions': 'tabPermissions'
 			};
@@ -3626,8 +3472,14 @@ const html = `<!DOCTYPE html>
 
 			// Update tab content
 			document.getElementById('modelTabContent').style.display = tabName === 'model' ? 'block' : 'none';
+			document.getElementById('mcpTabContent').style.display = tabName === 'mcp' ? 'block' : 'none';
 			document.getElementById('wslTabContent').style.display = tabName === 'wsl' ? 'block' : 'none';
 			document.getElementById('permissionsTabContent').style.display = tabName === 'permissions' ? 'block' : 'none';
+
+			// Load MCP servers when switching to MCP tab
+			if (tabName === 'mcp') {
+				loadMCPServers();
+			}
 		}
 
 		// Provider switching in settings
@@ -3870,31 +3722,372 @@ const html = `<!DOCTYPE html>
 			}
 		}
 
-		// Permissions management functions
-		function renderPermissions(permissions) {
-			const permissionsList = document.getElementById('permissionsList');
-			
-			if (!permissions || !permissions.alwaysAllow || Object.keys(permissions.alwaysAllow).length === 0) {
-				permissionsList.innerHTML = \`
-					<div class="permissions-empty">
-						No always-allow permissions set
+		// MCP Server Management Functions
+		let currentMCPServers = [];
+		let currentMCPServerType = 'remote';
+
+		function loadMCPServers() {
+			// Request MCP servers from VS Code
+			vscode.postMessage({
+				type: 'getMCPServers'
+			});
+		}
+
+		function renderMCPServers(data) {
+			const serverListEl = document.getElementById('mcpServerList');
+			const servers = data.servers || [];
+			const statuses = data.statuses || {};
+
+			currentMCPServers = servers;
+
+			if (servers.length === 0) {
+				serverListEl.innerHTML = \`
+					<div style="text-align: center; padding: 30px 20px; color: var(--vscode-descriptionForeground);">
+						<div style="font-size: 32px; margin-bottom: 12px;">🔌</div>
+						<div style="font-size: 12px; margin-bottom: 8px;">No MCP servers configured</div>
+						<div style="font-size: 10px; color: var(--vscode-descriptionForeground);">
+							Add a server to extend Code Pilot AI's capabilities
+						</div>
 					</div>
 				\`;
 				return;
 			}
-			
+
+			// Separate local and remote servers
+			const remoteServers = servers.filter(s => s.url);
+			const localServers = servers.filter(s => !s.url);
+
 			let html = '';
-			
+
+			// Remote Servers Section
+			if (remoteServers.length > 0) {
+				html += \`
+					<div style="margin-bottom: 20px;">
+						<h4 style="font-size: 11px; font-weight: 600; margin: 0 0 12px 0; color: var(--vscode-foreground);">Remote Servers (\${remoteServers.length})</h4>
+						\${renderServerList(remoteServers, statuses)}
+					</div>
+				\`;
+			}
+
+			// Local Servers Section
+			if (localServers.length > 0) {
+				html += \`
+					<div style="margin-bottom: 20px;">
+						<h4 style="font-size: 11px; font-weight: 600; margin: 0 0 12px 0; color: var(--vscode-foreground);">Local Servers (\${localServers.length})</h4>
+						\${renderServerList(localServers, statuses)}
+					</div>
+				\`;
+			}
+
+			serverListEl.innerHTML = html;
+		}
+
+		function renderServerList(servers, statuses) {
+			let html = '';
+			servers.forEach((server) => {
+				const status = statuses[server.name] || { connected: false, toolCount: 0, enabled: true };
+				const isEnabled = status.enabled !== undefined ? status.enabled : !server.disabled;
+				const isConnected = status.connected && isEnabled;
+				const statusClass = isConnected ? 'connected' : 'disconnected';
+				const statusText = isEnabled ? (isConnected ? 'Connected' : 'Disconnected') : 'Disabled';
+				const statusIcon = isConnected ? '🟢' : (isEnabled ? '🔴' : '⚫');
+				const serverType = server.url ? 'Remote' : 'Local';
+				const serverInfo = server.url || (server.command ? \`\${server.command}\${server.args ? ' ' + server.args.join(' ') : ''}\` : 'MCP Server');
+				const serverNameEscaped = server.name.replace(/'/g, "\\\\'");
+				const serverJsonEscaped = JSON.stringify(server).replace(/"/g, '&quot;');
+
+				html += \`
+					<div class="mcp-server-item" style="border: 1px solid var(--vscode-widget-border); border-radius: 6px; padding: 12px; margin-bottom: 8px; background: var(--vscode-editor-background);">
+						<div style="display: flex; justify-content: space-between; align-items: center;">
+							<div style="flex: 1;">
+								<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap;">
+									<span style="font-weight: 600; font-size: 12px;">\${server.name}</span>
+									<span class="mcp-server-type-badge" style="font-size: 9px; padding: 2px 6px; background: var(--vscode-badge-background); color: var(--vscode-badge-foreground); border-radius: 3px;">\${serverType}</span>
+								</div>
+								<div style="font-size: 10px; color: var(--vscode-descriptionForeground); margin-bottom: 6px; word-break: break-all; font-family: monospace;">\${serverInfo}</div>
+								<div style="display: flex; align-items: center; gap: 6px;">
+									<span class="mcp-status-indicator \${statusClass}" style="font-size: 10px; display: flex; align-items: center; gap: 4px;">
+										\${statusIcon} \${statusText}
+									</span>
+									\${isConnected ? \`<span style="font-size: 10px; color: var(--vscode-descriptionForeground);">• \${status.toolCount} tools</span>\` : ''}
+								</div>
+							</div>
+							<div style="display: flex; align-items: center; gap: 8px;">
+								<!-- Toggle Switch -->
+								<label class="mcp-toggle-switch" style="position: relative; display: inline-block; width: 40px; height: 20px;">
+									<input type="checkbox" class="mcp-toggle-input" data-server-name="\${serverNameEscaped}" \${isEnabled ? 'checked' : ''} style="opacity: 0; width: 0; height: 0;">
+									<span class="mcp-toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--vscode-input-background); border: 1px solid var(--vscode-widget-border); border-radius: 20px; transition: 0.3s;"></span>
+								</label>
+								<!-- Edit Button -->
+								<button class="btn outlined" onclick="editMCPServerSettings('\${serverNameEscaped}', \${serverJsonEscaped})" title="Edit server" style="font-size: 10px; padding: 4px 12px;">
+									Edit
+								</button>
+								<!-- Remove Button -->
+								<button class="btn outlined" onclick="removeMCPServerSettings('\${serverNameEscaped}')" title="Remove server" style="font-size: 10px; padding: 4px 12px; color: var(--vscode-errorForeground); border-color: var(--vscode-errorForeground);">
+									Remove
+								</button>
+							</div>
+						</div>
+					</div>
+				\`;
+			});
+			return html;
+		}
+
+		function showAddMCPServerForm() {
+			document.getElementById('showAddMCPServerBtn').style.display = 'none';
+			document.getElementById('addMCPServerForm').style.display = 'block';
+			// Clear form
+			document.getElementById('mcpServerName').value = '';
+			document.getElementById('mcpServerURL').value = '';
+			document.getElementById('mcpServerCommand').value = '';
+			document.getElementById('mcpServerArgs').value = '';
+			document.getElementById('mcpServerEnv').value = '';
+		}
+
+		function cancelAddMCPServer() {
+			document.getElementById('showAddMCPServerBtn').style.display = 'block';
+			document.getElementById('addMCPServerForm').style.display = 'none';
+
+			// Reset form state
+			document.getElementById('mcpServerName').disabled = false;
+			document.querySelector('#addMCPServerForm h4').textContent = 'Add MCP Server';
+			document.querySelector('#addMCPServerForm .btn.primary').textContent = 'Add Server';
+			document.getElementById('addMCPServerForm').removeAttribute('data-edit-mode');
+			document.getElementById('addMCPServerForm').removeAttribute('data-original-name');
+		}
+
+		function selectMCPType(type) {
+			currentMCPServerType = type;
+
+			// Update button states
+			document.getElementById('mcpTypeRemote').className = type === 'remote' ? 'mcp-type-btn active' : 'mcp-type-btn';
+			document.getElementById('mcpTypeLocal').className = type === 'local' ? 'mcp-type-btn active' : 'mcp-type-btn';
+
+			// Update button styles
+			const remoteBtn = document.getElementById('mcpTypeRemote');
+			const localBtn = document.getElementById('mcpTypeLocal');
+
+			if (type === 'remote') {
+				remoteBtn.style.background = 'var(--vscode-button-background)';
+				remoteBtn.style.color = 'var(--vscode-button-foreground)';
+				remoteBtn.style.border = '1px solid var(--vscode-button-background)';
+				localBtn.style.background = 'transparent';
+				localBtn.style.color = 'inherit';
+				localBtn.style.border = '1px solid var(--vscode-widget-border)';
+			} else {
+				localBtn.style.background = 'var(--vscode-button-background)';
+				localBtn.style.color = 'var(--vscode-button-foreground)';
+				localBtn.style.border = '1px solid var(--vscode-button-background)';
+				remoteBtn.style.background = 'transparent';
+				remoteBtn.style.color = 'inherit';
+				remoteBtn.style.border = '1px solid var(--vscode-widget-border)';
+			}
+
+			// Toggle field visibility
+			document.getElementById('mcpRemoteFields').style.display = type === 'remote' ? 'block' : 'none';
+			document.getElementById('mcpLocalFields').style.display = type === 'local' ? 'block' : 'none';
+		}
+
+		function saveMCPServer() {
+			const name = document.getElementById('mcpServerName').value.trim();
+			const formEl = document.getElementById('addMCPServerForm');
+			const isEditMode = formEl.getAttribute('data-edit-mode') === 'true';
+			const originalName = formEl.getAttribute('data-original-name');
+
+			if (!name) {
+				alert('Please enter a server name');
+				return;
+			}
+
+			// Check for duplicate names (skip check if editing same server)
+			if (!isEditMode && currentMCPServers.some(s => s.name === name)) {
+				alert('A server with this name already exists');
+				return;
+			}
+
+			const serverConfig = {
+				name,
+				type: currentMCPServerType
+			};
+
+			if (currentMCPServerType === 'remote') {
+				const url = document.getElementById('mcpServerURL').value.trim();
+				if (!url) {
+					alert('Please enter a server URL');
+					return;
+				}
+				serverConfig.url = url;
+			} else {
+				const command = document.getElementById('mcpServerCommand').value.trim();
+				if (!command) {
+					alert('Please enter a command');
+					return;
+				}
+
+				serverConfig.command = command;
+
+				const argsInput = document.getElementById('mcpServerArgs').value.trim();
+				if (argsInput) {
+					serverConfig.args = argsInput.split(',').map(a => a.trim()).filter(a => a);
+				}
+
+				const envInput = document.getElementById('mcpServerEnv').value.trim();
+				if (envInput) {
+					const env = {};
+					const pairs = envInput.split(',').map(p => p.trim()).filter(p => p);
+					for (const pair of pairs) {
+						const [key, ...valueParts] = pair.split('=');
+						if (key && valueParts.length > 0) {
+							env[key.trim()] = valueParts.join('=').trim();
+						}
+					}
+					if (Object.keys(env).length > 0) {
+						serverConfig.env = env;
+					}
+				}
+			}
+
+			// Send to VS Code
+			if (isEditMode) {
+				vscode.postMessage({
+					type: 'updateMCPServer',
+					originalName: originalName,
+					server: serverConfig
+				});
+			} else {
+				vscode.postMessage({
+					type: 'addMCPServer',
+					server: serverConfig
+				});
+			}
+
+			// Close form
+			cancelAddMCPServer();
+		}
+
+		function connectMCPServer(serverName) {
+			vscode.postMessage({
+				type: 'connectMCPServer',
+				serverName
+			});
+		}
+
+		function disconnectMCPServer(serverName) {
+			vscode.postMessage({
+				type: 'disconnectMCPServer',
+				serverName
+			});
+		}
+
+		function removeMCPServerSettings(serverName) {
+			console.log('removeMCPServerSettings called with:', serverName);
+			console.log('Sending removeMCPServer message:', serverName);
+			// Send message to backend - webview doesn't support confirm() due to sandboxing
+			vscode.postMessage({
+				type: 'removeMCPServer',
+				serverName: serverName
+			});
+		}
+
+		function editMCPServerSettings(serverName, server) {
+			// Populate the form with server data
+			document.getElementById('mcpServerName').value = server.name;
+			document.getElementById('mcpServerName').disabled = true; // Can't change name during edit
+
+			if (server.url) {
+				// Remote server
+				currentMCPServerType = 'remote';
+				document.getElementById('mcpServerURL').value = server.url;
+				selectMCPType('remote');
+			} else {
+				// Local server
+				currentMCPServerType = 'local';
+				document.getElementById('mcpServerCommand').value = server.command || '';
+				document.getElementById('mcpServerArgs').value = server.args ? server.args.join(', ') : '';
+
+				if (server.env) {
+					const envString = Object.entries(server.env).map(([k, v]) => \`\${k}=\${v}\`).join(', ');
+					document.getElementById('mcpServerEnv').value = envString;
+				}
+				selectMCPType('local');
+			}
+
+			// Show the form in edit mode
+			document.getElementById('showAddMCPServerBtn').style.display = 'none';
+			document.getElementById('addMCPServerForm').style.display = 'block';
+
+			// Change the form title and button text
+			document.querySelector('#addMCPServerForm h4').textContent = 'Edit MCP Server';
+			document.querySelector('#addMCPServerForm .btn.primary').textContent = 'Save Changes';
+
+			// Store that we're in edit mode
+			document.getElementById('addMCPServerForm').setAttribute('data-edit-mode', 'true');
+			document.getElementById('addMCPServerForm').setAttribute('data-original-name', serverName);
+		}
+
+		// Add event delegation for MCP server toggle
+		document.addEventListener('change', function(event) {
+			const target = event.target;
+
+			// Handle toggle switch
+			if (target.classList.contains('mcp-toggle-input')) {
+				const serverName = target.getAttribute('data-server-name');
+				if (serverName) {
+					if (target.checked) {
+						connectMCPServer(serverName);
+					} else {
+						disconnectMCPServer(serverName);
+					}
+				}
+			}
+		});
+
+		// Permissions management functions
+		function renderPermissions(permissions) {
+			const permissionsList = document.getElementById('permissionsList');
+
+			if (!permissions || !permissions.alwaysAllow || Object.keys(permissions.alwaysAllow).length === 0) {
+				permissionsList.innerHTML = \`
+					<div class="permissions-empty-new">
+						<div style="font-size: 48px; margin-bottom: 12px; opacity: 0.5;">🔒</div>
+						<div style="font-size: 12px; font-weight: 600; margin-bottom: 4px;">No Permissions Configured</div>
+						<div style="font-size: 11px; color: var(--vscode-descriptionForeground);">
+							Add permissions to allow specific tools to run without approval
+						</div>
+					</div>
+				\`;
+				return;
+			}
+
+			let html = '';
+
 			for (const [toolName, permission] of Object.entries(permissions.alwaysAllow)) {
 				if (permission === true) {
 					// Tool is always allowed
 					html += \`
-						<div class="permission-item">
-							<div class="permission-info">
-								<span class="permission-tool" data-tool="\${toolName}">\${toolName}</span>
-								<span class="permission-desc">All</span>
+						<div class="permission-card">
+							<div class="permission-card-icon">
+								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+									<path d="M9 12l2 2 4-4"/>
+								</svg>
 							</div>
-							<button class="permission-remove-btn" onclick="removePermission('\${toolName}', null)">Remove</button>
+							<div class="permission-card-content">
+								<div class="permission-card-header">
+									<span class="permission-tool-badge" data-tool="\${toolName}">\${toolName}</span>
+									<span class="permission-scope-badge">All Operations</span>
+								</div>
+								<div class="permission-card-description">
+									All \${toolName} operations are automatically approved
+								</div>
+							</div>
+							<button class="permission-remove-btn-new" onclick="removePermission('\${toolName}', null)" title="Remove permission">
+								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<line x1="18" y1="6" x2="6" y2="18"/>
+									<line x1="6" y1="6" x2="18" y2="18"/>
+								</svg>
+							</button>
 						</div>
 					\`;
 				} else if (Array.isArray(permission)) {
@@ -3902,18 +4095,34 @@ const html = `<!DOCTYPE html>
 					for (const command of permission) {
 						const displayCommand = command.replace(' *', ''); // Remove asterisk for display
 						html += \`
-							<div class="permission-item">
-								<div class="permission-info">
-									<span class="permission-tool" data-tool="\${toolName}">\${toolName}</span>
-									<span class="permission-command"><code>\${displayCommand}</code></span>
+							<div class="permission-card">
+								<div class="permission-card-icon">
+									<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+										<path d="M9 11l3 3L22 4"/>
+										<path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+									</svg>
 								</div>
-								<button class="permission-remove-btn" onclick="removePermission('\${toolName}', '\${escapeHtml(command)}')">Remove</button>
+								<div class="permission-card-content">
+									<div class="permission-card-header">
+										<span class="permission-tool-badge" data-tool="\${toolName}">\${toolName}</span>
+										<span class="permission-scope-badge-specific">Specific Command</span>
+									</div>
+									<div class="permission-card-description">
+										<code class="permission-command-code">\${displayCommand}</code>
+									</div>
+								</div>
+								<button class="permission-remove-btn-new" onclick="removePermission('\${toolName}', '\${escapeHtml(command)}')" title="Remove permission">
+									<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+										<line x1="18" y1="6" x2="6" y2="18"/>
+										<line x1="6" y1="6" x2="18" y2="18"/>
+									</svg>
+								</button>
 							</div>
 						\`;
 					}
 				}
 			}
-			
+
 			permissionsList.innerHTML = html;
 		}
 		
@@ -3947,20 +4156,22 @@ const html = `<!DOCTYPE html>
 		
 		function toggleCommandInput() {
 			const toolSelect = document.getElementById('addPermissionTool');
+			const commandFieldContainer = document.getElementById('commandFieldContainer');
 			const commandInput = document.getElementById('addPermissionCommand');
 			const hintDiv = document.getElementById('permissionsFormHint');
-			
+
 			if (toolSelect.value === 'Bash') {
-				commandInput.style.display = 'block';
-				hintDiv.textContent = 'Use patterns like "npm i *" or "git add *" for specific commands.';
+				commandFieldContainer.style.display = 'block';
+				hintDiv.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>Use patterns like <code>npm install *</code> or <code>git add *</code> for specific commands';
 			} else if (toolSelect.value === '') {
-				commandInput.style.display = 'none';
+				commandFieldContainer.style.display = 'none';
 				commandInput.value = '';
-				hintDiv.textContent = 'Select a tool to add always-allow permission.';
+				hintDiv.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>Select a tool to grant automatic permission';
 			} else {
-				commandInput.style.display = 'none';
+				commandFieldContainer.style.display = 'none';
 				commandInput.value = '';
-				hintDiv.textContent = 'This will allow all ' + toolSelect.value + ' commands without asking for permission.';
+				const toolName = toolSelect.value.split(' - ')[0]; // Extract just the tool name
+				hintDiv.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>This will automatically approve all <strong>' + toolName + '</strong> operations without asking';
 			}
 		}
 		
@@ -3968,33 +4179,34 @@ const html = `<!DOCTYPE html>
 			const toolSelect = document.getElementById('addPermissionTool');
 			const commandInput = document.getElementById('addPermissionCommand');
 			const addBtn = document.getElementById('addPermissionBtn');
-			
-			const toolName = toolSelect.value.trim();
+
+			const toolValue = toolSelect.value.trim();
+			const toolName = toolValue.split(' - ')[0]; // Extract just the tool name
 			const command = commandInput.value.trim();
-			
+
 			if (!toolName) {
 				return;
 			}
-			
+
 			// Disable button during processing
 			addBtn.disabled = true;
 			addBtn.textContent = 'Adding...';
-			
+
 			vscode.postMessage({
 				type: 'addPermission',
 				toolName: toolName,
 				command: command || null
 			});
-			
+
 			// Clear form and hide it
 			toolSelect.value = '';
 			commandInput.value = '';
 			hideAddPermissionForm();
-			
+
 			// Re-enable button
 			setTimeout(() => {
 				addBtn.disabled = false;
-				addBtn.textContent = 'Add';
+				addBtn.textContent = 'Add Permission';
 			}, 500);
 		}
 

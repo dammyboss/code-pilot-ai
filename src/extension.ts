@@ -36,6 +36,10 @@ export function activate(context: vscode.ExtensionContext) {
 		provider.loadConversation(filename);
 	});
 
+	const configureMCPDisposable = vscode.commands.registerCommand('code-pilot-ai.configureMCP', async () => {
+		await configureMCPServers(context);
+	});
+
 	// Register webview view provider for sidebar chat (using shared provider instance)
 	const webviewProvider = new ClaudeChatWebviewProvider(context.extensionUri, context, provider);
 	vscode.window.registerWebviewViewProvider('code-pilot-ai.chat', webviewProvider);
@@ -55,11 +59,258 @@ export function activate(context: vscode.ExtensionContext) {
 	statusBarItem.command = 'code-pilot-ai.openChat';
 	statusBarItem.show();
 
-	context.subscriptions.push(disposable, loadConversationDisposable, configChangeDisposable, statusBarItem);
+	context.subscriptions.push(disposable, loadConversationDisposable, configureMCPDisposable, configChangeDisposable, statusBarItem);
 	console.log('Code Pilot AI extension activation completed successfully!');
 }
 
 export function deactivate() { }
+
+// MCP Configuration UI
+async function configureMCPServers(context: vscode.ExtensionContext): Promise<void> {
+	const config = vscode.workspace.getConfiguration('codePilotAI');
+	const currentServers = config.get<any[]>('mcp.servers', []);
+
+	// Show quick pick for action
+	const action = await vscode.window.showQuickPick(
+		[
+			{ label: '$(plus) Add New MCP Server', value: 'add' },
+			{ label: '$(edit) Edit Existing Server', value: 'edit' },
+			{ label: '$(trash) Remove Server', value: 'remove' },
+			{ label: '$(list-unordered) View All Servers', value: 'view' }
+		],
+		{
+			placeHolder: 'What would you like to do?'
+		}
+	);
+
+	if (!action) return;
+
+	switch (action.value) {
+		case 'add':
+			await addMCPServer(config, currentServers);
+			break;
+		case 'edit':
+			await editMCPServer(config, currentServers);
+			break;
+		case 'remove':
+			await removeMCPServer(config, currentServers);
+			break;
+		case 'view':
+			await viewMCPServers(currentServers);
+			break;
+	}
+}
+
+async function addMCPServer(config: vscode.WorkspaceConfiguration, currentServers: any[]): Promise<void> {
+	// Ask for server type
+	const serverType = await vscode.window.showQuickPick(
+		[
+			{ label: 'Remote MCP Server (HTTP)', value: 'remote', description: 'Connect to a remote MCP server via URL' },
+			{ label: 'Local MCP Server (stdio)', value: 'local', description: 'Run a local MCP server process' }
+		],
+		{
+			placeHolder: 'Select MCP server type'
+		}
+	);
+
+	if (!serverType) return;
+
+	// Get server name
+	const name = await vscode.window.showInputBox({
+		prompt: 'Enter a unique name for this MCP server',
+		placeHolder: 'e.g., my-mcp-server',
+		validateInput: (value) => {
+			if (!value || value.trim() === '') return 'Name cannot be empty';
+			if (currentServers.some(s => s.name === value)) return 'Server with this name already exists';
+			return null;
+		}
+	});
+
+	if (!name) return;
+
+	if (serverType.value === 'remote') {
+		// Remote server configuration
+		const url = await vscode.window.showInputBox({
+			prompt: 'Enter the MCP server URL',
+			placeHolder: 'e.g., https://my-server.com/api/mcp or my-server.com/api/mcp',
+			validateInput: (value) => {
+				if (!value || value.trim() === '') return 'URL cannot be empty';
+				return null;
+			}
+		});
+
+		if (!url) return;
+
+		const newServer = {
+			name,
+			type: 'remote',
+			url: url.trim()
+		};
+
+		await config.update('mcp.servers', [...currentServers, newServer], vscode.ConfigurationTarget.Global);
+		vscode.window.showInformationMessage(`MCP server '${name}' added successfully! Please reload the window to connect.`, 'Reload Window').then(selection => {
+			if (selection === 'Reload Window') {
+				vscode.commands.executeCommand('workbench.action.reloadWindow');
+			}
+		});
+
+	} else {
+		// Local server configuration
+		const command = await vscode.window.showInputBox({
+			prompt: 'Enter the command to run the MCP server',
+			placeHolder: 'e.g., node, python, npx'
+		});
+
+		if (!command) return;
+
+		const argsInput = await vscode.window.showInputBox({
+			prompt: 'Enter command arguments (comma-separated, optional)',
+			placeHolder: 'e.g., /path/to/server.js, --port, 3000'
+		});
+
+		const args = argsInput ? argsInput.split(',').map(a => a.trim()).filter(a => a) : [];
+
+		const envInput = await vscode.window.showInputBox({
+			prompt: 'Enter environment variables (KEY=VALUE, comma-separated, optional)',
+			placeHolder: 'e.g., API_KEY=your-key, DEBUG=true'
+		});
+
+		const env: Record<string, string> = {};
+		if (envInput) {
+			const pairs = envInput.split(',').map(p => p.trim()).filter(p => p);
+			for (const pair of pairs) {
+				const [key, ...valueParts] = pair.split('=');
+				if (key && valueParts.length > 0) {
+					env[key.trim()] = valueParts.join('=').trim();
+				}
+			}
+		}
+
+		const newServer: any = {
+			name,
+			type: 'local',
+			command: command.trim(),
+			args
+		};
+
+		if (Object.keys(env).length > 0) {
+			newServer.env = env;
+		}
+
+		await config.update('mcp.servers', [...currentServers, newServer], vscode.ConfigurationTarget.Global);
+		vscode.window.showInformationMessage(`MCP server '${name}' added successfully! Please reload the window to connect.`, 'Reload Window').then(selection => {
+			if (selection === 'Reload Window') {
+				vscode.commands.executeCommand('workbench.action.reloadWindow');
+			}
+		});
+	}
+}
+
+async function editMCPServer(config: vscode.WorkspaceConfiguration, currentServers: any[]): Promise<void> {
+	if (currentServers.length === 0) {
+		vscode.window.showInformationMessage('No MCP servers configured yet. Add one first!');
+		return;
+	}
+
+	const serverToEdit = await vscode.window.showQuickPick(
+		currentServers.map(s => ({
+			label: s.name,
+			description: s.type === 'remote' ? `Remote: ${s.url}` : `Local: ${s.command}`,
+			server: s
+		})),
+		{
+			placeHolder: 'Select a server to edit'
+		}
+	);
+
+	if (!serverToEdit) return;
+
+	vscode.window.showInformationMessage(
+		'To edit a server, please open VS Code settings and navigate to "Code Pilot AI > MCP: Servers"',
+		'Open Settings'
+	).then(selection => {
+		if (selection === 'Open Settings') {
+			vscode.commands.executeCommand('workbench.action.openSettings', 'codePilotAI.mcp.servers');
+		}
+	});
+}
+
+async function removeMCPServer(config: vscode.WorkspaceConfiguration, currentServers: any[]): Promise<void> {
+	if (currentServers.length === 0) {
+		vscode.window.showInformationMessage('No MCP servers configured.');
+		return;
+	}
+
+	const serverToRemove = await vscode.window.showQuickPick(
+		currentServers.map(s => ({
+			label: s.name,
+			description: s.type === 'remote' ? `Remote: ${s.url}` : `Local: ${s.command}`,
+			server: s
+		})),
+		{
+			placeHolder: 'Select a server to remove'
+		}
+	);
+
+	if (!serverToRemove) return;
+
+	const confirm = await vscode.window.showWarningMessage(
+		`Are you sure you want to remove MCP server '${serverToRemove.server.name}'?`,
+		{ modal: true },
+		'Yes, Remove'
+	);
+
+	if (confirm === 'Yes, Remove') {
+		const updatedServers = currentServers.filter(s => s.name !== serverToRemove.server.name);
+		await config.update('mcp.servers', updatedServers, vscode.ConfigurationTarget.Global);
+		vscode.window.showInformationMessage(`MCP server '${serverToRemove.server.name}' removed successfully! Please reload the window.`, 'Reload Window').then(selection => {
+			if (selection === 'Reload Window') {
+				vscode.commands.executeCommand('workbench.action.reloadWindow');
+			}
+		});
+	}
+}
+
+async function viewMCPServers(currentServers: any[]): Promise<void> {
+	if (currentServers.length === 0) {
+		vscode.window.showInformationMessage('No MCP servers configured yet.');
+		return;
+	}
+
+	const serverList = currentServers.map((s, idx) => {
+		let details = `**${idx + 1}. ${s.name}**\n`;
+		details += `   - Type: ${s.type || 'unknown'}\n`;
+
+		if (s.type === 'remote' && s.url) {
+			details += `   - URL: ${s.url}\n`;
+		} else if (s.type === 'local' || s.command) {
+			details += `   - Command: ${s.command}\n`;
+			if (s.args && s.args.length > 0) {
+				details += `   - Args: ${JSON.stringify(s.args)}\n`;
+			}
+			if (s.env && Object.keys(s.env).length > 0) {
+				details += `   - Environment: ${JSON.stringify(s.env)}\n`;
+			}
+		}
+
+		return details;
+	}).join('\n');
+
+	const message = `# Configured MCP Servers (${currentServers.length})\n\n${serverList}`;
+
+	const action = await vscode.window.showInformationMessage(
+		`You have ${currentServers.length} MCP server(s) configured.`,
+		'Open Settings',
+		'Copy Configuration'
+	);
+
+	if (action === 'Open Settings') {
+		vscode.commands.executeCommand('workbench.action.openSettings', 'codePilotAI.mcp.servers');
+	} else if (action === 'Copy Configuration') {
+		await vscode.env.clipboard.writeText(JSON.stringify(currentServers, null, 2));
+		vscode.window.showInformationMessage('MCP servers configuration copied to clipboard!');
+	}
+}
 
 class ClaudeChatWebviewProvider implements vscode.WebviewViewProvider {
 	constructor(
@@ -208,37 +459,71 @@ class ClaudeChatProvider {
 		this._outputChannel.appendLine('API Client initialized');
 	}
 
+	private normalizeUrl(url: string): string {
+		// Auto-add https:// if no protocol is specified
+		if (!url.startsWith('http://') && !url.startsWith('https://')) {
+			return `https://${url}`;
+		}
+		return url;
+	}
+
 	private async _loadMCPServersForClient(): Promise<void> {
 		if (!this._mcpClient) return;
 
 		const servers: Record<string, MCPServerConfig> = {};
 
 		try {
-			// Load from extension's storage first
+			// Load from VS Code settings first (highest priority, user-friendly)
+			const config = vscode.workspace.getConfiguration('codePilotAI');
+			const mcpServersFromSettings = config.get<any[]>('mcp.servers', []);
+
+			for (const serverConfig of mcpServersFromSettings) {
+				if (!serverConfig.name) continue;
+
+				// Skip disabled servers
+				if (serverConfig.disabled === true) {
+					this._outputChannel.appendLine(`Skipping disabled MCP server: ${serverConfig.name}`);
+					continue;
+				}
+
+				servers[serverConfig.name] = {
+					command: serverConfig.command,
+					args: serverConfig.args,
+					env: serverConfig.env,
+					url: serverConfig.url ? this.normalizeUrl(serverConfig.url) : undefined,
+					headers: serverConfig.headers
+				};
+				this._outputChannel.appendLine(`Loaded MCP server from settings: ${serverConfig.name}`);
+			}
+
+			// Load from extension's storage (for backward compatibility)
 			const storagePath = this._context.globalStorageUri.fsPath;
 			const mcpConfigPath = path.join(storagePath, 'mcp', 'mcp-servers.json');
 
 			if (fs.existsSync(mcpConfigPath)) {
 				const configContent = fs.readFileSync(mcpConfigPath, 'utf-8');
-				const config = JSON.parse(configContent);
+				const storageConfig = JSON.parse(configContent);
 
-				if (config.mcpServers) {
-					for (const [name, serverConfig] of Object.entries(config.mcpServers as Record<string, any>)) {
+				if (storageConfig.mcpServers) {
+					for (const [name, serverConfig] of Object.entries(storageConfig.mcpServers as Record<string, any>)) {
 						// Skip the built-in permissions server
 						if (name === 'claude-code-chat-permissions' || name === 'code-pilot-ai-permissions') continue;
+
+						// Skip if already loaded from settings
+						if (servers[name]) continue;
 
 						servers[name] = {
 							command: serverConfig.command,
 							args: serverConfig.args,
 							env: serverConfig.env,
-							url: serverConfig.url,
+							url: serverConfig.url ? this.normalizeUrl(serverConfig.url) : undefined,
 							headers: serverConfig.headers
 						};
 					}
 				}
 			}
 
-			// Also try to load from VS Code's global MCP config
+			// Also try to load from VS Code's global MCP config (lowest priority)
 			const vscodeMcpPaths = [
 				// Windows
 				path.join(process.env.APPDATA || '', 'Code', 'User', 'mcp.json'),
@@ -255,14 +540,14 @@ class ClaudeChatProvider {
 						const vscodeConfig = JSON.parse(fs.readFileSync(vscodeMcpPath, 'utf-8'));
 						if (vscodeConfig.servers) {
 							for (const [name, serverConfig] of Object.entries(vscodeConfig.servers as Record<string, any>)) {
-								// Skip if already loaded from extension config
+								// Skip if already loaded from settings or extension config
 								if (servers[name]) continue;
 
 								servers[name] = {
 									command: serverConfig.command,
 									args: serverConfig.args,
 									env: serverConfig.env,
-									url: serverConfig.url,
+									url: serverConfig.url ? this.normalizeUrl(serverConfig.url) : undefined,
 									headers: serverConfig.headers
 								};
 								this._outputChannel.appendLine(`Loaded MCP server from VS Code config: ${name}`);
@@ -525,6 +810,24 @@ class ClaudeChatProvider {
 				return;
 			case 'deleteMCPServer':
 				this._deleteMCPServer(message.name);
+				return;
+			case 'getMCPServers':
+				this._getMCPServersForSettings();
+				return;
+			case 'addMCPServer':
+				this._addMCPServerFromSettings(message.server);
+				return;
+			case 'updateMCPServer':
+				this._updateMCPServerFromSettings(message.originalName, message.server);
+				return;
+			case 'removeMCPServer':
+				this._removeMCPServerFromSettings(message.serverName);
+				return;
+			case 'connectMCPServer':
+				this._connectMCPServerFromSettings(message.serverName);
+				return;
+			case 'disconnectMCPServer':
+				this._disconnectMCPServerFromSettings(message.serverName);
 				return;
 			case 'getCustomSnippets':
 				this._sendCustomSnippets();
@@ -1652,6 +1955,210 @@ class ClaudeChatProvider {
 		} catch (error) {
 			console.error('Error deleting MCP server:', error);
 			this._postMessage({ type: 'mcpServerError', data: { error: 'Failed to delete MCP server' } });
+		}
+	}
+
+	private async _getMCPServersForSettings(): Promise<void> {
+		try {
+			const config = vscode.workspace.getConfiguration('codePilotAI');
+			const servers = config.get<any[]>('mcp.servers', []);
+
+			// Get server statuses from MCP client
+			const statuses: Record<string, { connected: boolean; toolCount: number; enabled: boolean }> = {};
+
+			if (this._mcpClient) {
+				const allTools = this._mcpClient.getAllTools();
+
+				for (const server of servers) {
+					const serverTools = allTools.filter(t => t.serverName === server.name);
+					const isEnabled = !server.disabled;
+					const isConnected = serverTools.length > 0 && isEnabled;
+					statuses[server.name] = {
+						connected: isConnected,
+						toolCount: serverTools.length,
+						enabled: isEnabled
+					};
+				}
+			} else {
+				// If no MCP client, still provide enabled status
+				for (const server of servers) {
+					statuses[server.name] = {
+						connected: false,
+						toolCount: 0,
+						enabled: !server.disabled
+					};
+				}
+			}
+
+			this._postMessage({
+				type: 'mcpServersData',
+				data: {
+					servers: servers,
+					statuses
+				}
+			});
+		} catch (error) {
+			console.error('Error getting MCP servers:', error);
+			this._postMessage({ type: 'mcpServerError', data: { error: 'Failed to get MCP servers' } });
+		}
+	}
+
+	private async _addMCPServerFromSettings(server: any): Promise<void> {
+		try {
+			const config = vscode.workspace.getConfiguration('codePilotAI');
+			const currentServers = config.get<any[]>('mcp.servers', []);
+
+			// Check for duplicate names
+			if (currentServers.some(s => s.name === server.name)) {
+				this._postMessage({ type: 'mcpServerError', data: { error: `Server '${server.name}' already exists` } });
+				return;
+			}
+
+			// Add the new server
+			const updatedServers = [...currentServers, server];
+			await config.update('mcp.servers', updatedServers, vscode.ConfigurationTarget.Global);
+
+			this._postMessage({ type: 'mcpServerAdded', data: { name: server.name } });
+
+			// Reload MCP servers for client
+			await this._loadMCPServersForClient();
+		} catch (error) {
+			console.error('Error adding MCP server:', error);
+			this._postMessage({ type: 'mcpServerError', data: { error: 'Failed to add MCP server' } });
+		}
+	}
+
+	private async _updateMCPServerFromSettings(originalName: string, server: any): Promise<void> {
+		try {
+			const config = vscode.workspace.getConfiguration('codePilotAI');
+			const currentServers = config.get<any[]>('mcp.servers', []);
+
+			// Find and update the server
+			const serverIndex = currentServers.findIndex(s => s.name === originalName);
+			if (serverIndex === -1) {
+				this._postMessage({ type: 'mcpServerError', data: { error: `Server '${originalName}' not found` } });
+				return;
+			}
+
+			// Update the server configuration
+			currentServers[serverIndex] = { ...currentServers[serverIndex], ...server };
+			await config.update('mcp.servers', currentServers, vscode.ConfigurationTarget.Global);
+
+			this._postMessage({ type: 'mcpServerUpdated', data: { name: server.name } });
+
+			// Reload MCP servers for client
+			await this._loadMCPServersForClient();
+
+			// Refresh the UI
+			await this._getMCPServersForSettings();
+		} catch (error) {
+			console.error('Error updating MCP server:', error);
+			this._postMessage({ type: 'mcpServerError', data: { error: 'Failed to update MCP server' } });
+		}
+	}
+
+	private async _removeMCPServerFromSettings(serverName: string): Promise<void> {
+		try {
+			this._outputChannel.appendLine(`Removing MCP server from settings: ${serverName}`);
+
+			// Show confirmation dialog using VS Code API (works outside sandboxed webview)
+			const confirm = await vscode.window.showWarningMessage(
+				`Are you sure you want to remove MCP server '${serverName}'?`,
+				{ modal: true },
+				'Yes, Remove'
+			);
+			this._outputChannel.appendLine(`User confirmation result: ${confirm}`);
+
+			if (confirm !== 'Yes, Remove') {
+				this._outputChannel.appendLine(`User cancelled removal`);
+				return;
+			}
+
+			const config = vscode.workspace.getConfiguration('codePilotAI');
+			const currentServers = config.get<any[]>('mcp.servers', []);
+			this._outputChannel.appendLine(`Current servers count: ${currentServers.length}`);
+
+			// Remove the server
+			const updatedServers = currentServers.filter(s => s.name !== serverName);
+			this._outputChannel.appendLine(`Updated servers count: ${updatedServers.length}`);
+
+			await config.update('mcp.servers', updatedServers, vscode.ConfigurationTarget.Global);
+			this._outputChannel.appendLine(`Settings updated successfully`);
+
+			// Reload MCP servers for client
+			await this._loadMCPServersForClient();
+
+			// Refresh the UI immediately
+			await this._getMCPServersForSettings();
+
+			this._postMessage({ type: 'mcpServerRemoved', data: { name: serverName } });
+			this._outputChannel.appendLine(`Removed server '${serverName}' successfully`);
+			vscode.window.showInformationMessage(`MCP server '${serverName}' removed successfully.`);
+		} catch (error) {
+			this._outputChannel.appendLine(`Error removing MCP server: ${error}`);
+			console.error('Error removing MCP server:', error);
+			vscode.window.showErrorMessage(`Failed to remove MCP server: ${error instanceof Error ? error.message : 'Unknown error'}`);
+			this._postMessage({ type: 'mcpServerError', data: { error: 'Failed to remove MCP server' } });
+		}
+	}
+
+	private async _connectMCPServerFromSettings(serverName: string): Promise<void> {
+		try {
+			const config = vscode.workspace.getConfiguration('codePilotAI');
+			const servers = config.get<any[]>('mcp.servers', []);
+
+			// Find the server and enable it
+			const updatedServers = servers.map(s => {
+				if (s.name === serverName) {
+					return { ...s, disabled: false };
+				}
+				return s;
+			});
+
+			await config.update('mcp.servers', updatedServers, vscode.ConfigurationTarget.Global);
+
+			// Reload MCP client to connect the server
+			await this._loadMCPServersForClient();
+
+			// Small delay to allow MCP client to connect
+			setTimeout(async () => {
+				// Refresh the UI with updated status
+				await this._getMCPServersForSettings();
+				this._postMessage({ type: 'mcpServerConnected', data: { name: serverName } });
+			}, 500);
+		} catch (error) {
+			console.error('Error connecting MCP server:', error);
+			this._postMessage({ type: 'mcpServerError', data: { error: 'Failed to connect MCP server' } });
+		}
+	}
+
+	private async _disconnectMCPServerFromSettings(serverName: string): Promise<void> {
+		try {
+			const config = vscode.workspace.getConfiguration('codePilotAI');
+			const servers = config.get<any[]>('mcp.servers', []);
+
+			// Find the server and disable it
+			const updatedServers = servers.map(s => {
+				if (s.name === serverName) {
+					return { ...s, disabled: true };
+				}
+				return s;
+			});
+
+			await config.update('mcp.servers', updatedServers, vscode.ConfigurationTarget.Global);
+
+			// Reload MCP client (disabled servers won't be loaded)
+			await this._loadMCPServersForClient();
+
+			// Small delay to allow MCP client to disconnect
+			setTimeout(async () => {
+				// Refresh the UI with updated status
+				await this._getMCPServersForSettings();
+				this._postMessage({ type: 'mcpServerDisconnected', data: { name: serverName } });
+			}, 500);
+		} catch (error) {
+			console.error('Error disconnecting MCP server:', error);
+			this._postMessage({ type: 'mcpServerError', data: { error: 'Failed to disconnect MCP server' } });
 		}
 	}
 
