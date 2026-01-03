@@ -38,7 +38,7 @@ export interface StreamCallbacks {
     onThinking?: (thinking: string) => void;
 }
 
-export type Provider = 'anthropic' | 'azure' | 'deepseek';
+export type Provider = 'anthropic' | 'azure' | 'deepseek' | 'grok';
 
 export class APIClient {
     private provider: Provider;
@@ -50,6 +50,8 @@ export class APIClient {
     private azureApiVersion: string;
     private deepseekApiKey: string;
     private deepseekModel: string;
+    private grokApiKey: string;
+    private grokModel: string;
     private toolExecutor: ToolExecutor;
     private conversationHistory: Message[] = [];
     private systemPrompt: string;
@@ -69,6 +71,8 @@ export class APIClient {
             azureApiVersion?: string;
             deepseekApiKey?: string;
             deepseekModel?: string;
+            grokApiKey?: string;
+            grokModel?: string;
         },
         toolExecutor: ToolExecutor,
         outputChannel: vscode.OutputChannel
@@ -82,6 +86,8 @@ export class APIClient {
         this.azureApiVersion = config.azureApiVersion || '2024-02-15-preview';
         this.deepseekApiKey = config.deepseekApiKey || '';
         this.deepseekModel = config.deepseekModel || 'deepseek-chat';
+        this.grokApiKey = config.grokApiKey || '';
+        this.grokModel = config.grokModel || 'grok-beta';
         this.toolExecutor = toolExecutor;
         this.outputChannel = outputChannel;
         this.systemPrompt = this.buildSystemPrompt();
@@ -139,6 +145,8 @@ When you need to perform an action, use the appropriate tool. After receiving to
         azureApiVersion: string;
         deepseekApiKey: string;
         deepseekModel: string;
+        grokApiKey: string;
+        grokModel: string;
     }>) {
         if (config.provider !== undefined) this.provider = config.provider;
         if (config.anthropicApiKey !== undefined) this.anthropicApiKey = config.anthropicApiKey;
@@ -149,6 +157,8 @@ When you need to perform an action, use the appropriate tool. After receiving to
         if (config.azureApiVersion !== undefined) this.azureApiVersion = config.azureApiVersion;
         if (config.deepseekApiKey !== undefined) this.deepseekApiKey = config.deepseekApiKey;
         if (config.deepseekModel !== undefined) this.deepseekModel = config.deepseekModel;
+        if (config.grokApiKey !== undefined) this.grokApiKey = config.grokApiKey;
+        if (config.grokModel !== undefined) this.grokModel = config.grokModel;
     }
 
     clearHistory() {
@@ -249,6 +259,8 @@ When you need to perform an action, use the appropriate tool. After receiving to
                 response = await this.callAnthropicAPI(callbacks, thinkingEnabled);
             } else if (this.provider === 'deepseek') {
                 response = await this.callDeepSeekAPI();
+            } else if (this.provider === 'grok') {
+                response = await this.callGrokAPI();
             } else {
                 response = await this.callAzureAPI();
             }
@@ -774,6 +786,143 @@ When you need to perform an action, use the appropriate tool. After receiving to
                     }
                 } catch (e) {
                     this.outputChannel.appendLine(`Error parsing DeepSeek SSE: ${e}`);
+                }
+            }
+        }
+
+        // Build content blocks
+        if (currentText) {
+            contentBlocks.push({ type: 'text', text: currentText });
+        }
+
+        for (const [_, toolCall] of currentToolCalls) {
+            try {
+                const input = JSON.parse(toolCall.arguments || '{}');
+                contentBlocks.push({
+                    type: 'tool_use',
+                    id: toolCall.id,
+                    name: toolCall.name,
+                    input
+                });
+            } catch {
+                this.outputChannel.appendLine(`Failed to parse tool arguments: ${toolCall.arguments}`);
+            }
+        }
+
+        return { content: contentBlocks, inputTokens, outputTokens, stopReason, bufferedText: currentText };
+    }
+
+    private async callGrokAPI(): Promise<{
+        content: ContentBlock[];
+        inputTokens: number;
+        outputTokens: number;
+        stopReason: string;
+        bufferedText: string;
+    }> {
+        const url = 'https://api.x.ai/v1/chat/completions';
+
+        const messages = this.formatMessagesForAzure(); // Grok uses OpenAI-compatible format
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${this.grokApiKey}`
+            },
+            body: JSON.stringify({
+                model: this.grokModel,
+                messages: [
+                    { role: 'system', content: this.systemPrompt },
+                    ...messages
+                ],
+                tools: [...azureTools, ...this.toolExecutor.getMCPTools('azure')], // Grok uses OpenAI-compatible tool format
+                stream: true,
+                max_tokens: 4096,
+                temperature: 0
+            }),
+            signal: this.abortController?.signal
+        });
+
+        if (!response.ok) {
+            const errorData: any = await response.json().catch(() => ({}));
+            // xAI error format: { "code": "...", "error": "..." } where error is a string
+            const errorMessage = typeof errorData?.error === 'string'
+                ? errorData.error
+                : errorData?.error?.message || `Grok API error: ${response.status}`;
+            throw new Error(errorMessage);
+        }
+
+        return await this.processGrokStream(response);
+    }
+
+    private async processGrokStream(response: Response): Promise<{
+        content: ContentBlock[];
+        inputTokens: number;
+        outputTokens: number;
+        stopReason: string;
+        bufferedText: string;
+    }> {
+        const reader = response.body?.getReader();
+        if (!reader) throw new Error('No response body');
+
+        const decoder = new TextDecoder();
+        let buffer = '';
+        const contentBlocks: ContentBlock[] = [];
+        let currentText = '';
+        let currentToolCalls: Map<number, { id: string; name: string; arguments: string }> = new Map();
+        let inputTokens = 0;
+        let outputTokens = 0;
+        let stopReason = 'stop';
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+                if (!line.startsWith('data: ')) continue;
+
+                const data = line.slice(6);
+                if (data === '[DONE]') continue;
+
+                try {
+                    const event = JSON.parse(data);
+                    const choice = event.choices?.[0];
+
+                    if (choice?.delta?.content) {
+                        currentText += choice.delta.content;
+                    }
+
+                    if (choice?.delta?.tool_calls) {
+                        for (const toolCall of choice.delta.tool_calls) {
+                            const index = toolCall.index;
+                            if (!currentToolCalls.has(index)) {
+                                currentToolCalls.set(index, {
+                                    id: toolCall.id || '',
+                                    name: toolCall.function?.name || '',
+                                    arguments: ''
+                                });
+                            }
+                            const tc = currentToolCalls.get(index)!;
+                            if (toolCall.id) tc.id = toolCall.id;
+                            if (toolCall.function?.name) tc.name = toolCall.function.name;
+                            if (toolCall.function?.arguments) tc.arguments += toolCall.function.arguments;
+                        }
+                    }
+
+                    if (choice?.finish_reason) {
+                        stopReason = choice.finish_reason;
+                    }
+
+                    if (event.usage) {
+                        inputTokens = event.usage.prompt_tokens || 0;
+                        outputTokens = event.usage.completion_tokens || 0;
+                    }
+                } catch (e) {
+                    this.outputChannel.appendLine(`Error parsing Grok SSE: ${e}`);
                 }
             }
         }

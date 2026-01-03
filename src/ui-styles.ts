@@ -1124,6 +1124,72 @@ const styles = `
         scroll-behavior: smooth;
     }
 
+    .welcome-screen {
+        position: absolute;
+        top: 85px;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding-top: 0;
+        pointer-events: none;
+        opacity: 1;
+        transition: opacity 0.3s ease;
+    }
+
+    .welcome-screen.hidden {
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .welcome-content {
+        text-align: center;
+        max-width: 500px;
+    }
+
+    .welcome-logo {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 12px;
+    }
+
+    .welcome-icon-img {
+        width: 32px;
+        height: 32px;
+        animation: pulse 2s ease-in-out infinite;
+        border-radius: 5px;
+    }
+
+    .welcome-logo h1 {
+        font-size: 20px;
+        font-weight: 300;
+        margin: 0;
+        color: var(--vscode-foreground);
+        letter-spacing: -0.5px;
+    }
+
+    .welcome-text {
+        font-size: 12px;
+        color: var(--vscode-descriptionForeground);
+        margin: 0;
+        transition: opacity 0.6s ease-in-out;
+    }
+
+    @keyframes pulse {
+        0%, 100% {
+            opacity: 1;
+            transform: scale(1);
+        }
+        50% {
+            opacity: 0.9;
+            transform: scale(1.02);
+        }
+    }
+
     .message {
         margin-bottom: 16px;
         padding: 0;

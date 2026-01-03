@@ -450,7 +450,9 @@ class ClaudeChatProvider {
 				azureDeployment: config.get<string>('azure.deployment', ''),
 				azureApiVersion: config.get<string>('azure.apiVersion', '2024-02-15-preview'),
 				deepseekApiKey: config.get<string>('deepseek.apiKey', ''),
-				deepseekModel: config.get<string>('deepseek.model', 'deepseek-chat')
+				deepseekModel: config.get<string>('deepseek.model', 'deepseek-chat'),
+				grokApiKey: config.get<string>('grok.apiKey', ''),
+				grokModel: config.get<string>('grok.model', 'grok-beta')
 			},
 			this._toolExecutor,
 			this._outputChannel
@@ -706,10 +708,7 @@ class ClaudeChatProvider {
 			});
 		}
 
-		this._postMessage({
-			type: 'ready',
-			data: 'Ready to chat! Type your message below.'
-		});
+		// Ready message removed - using welcome screen instead
 
 		// Send current model to webview
 		this._postMessage({
@@ -849,6 +848,9 @@ class ClaudeChatProvider {
 				return;
 			case 'testDeepSeekConnection':
 				this._testDeepSeekConnection(message.apiKey, message.model);
+				return;
+			case 'testGrokConnection':
+				this._testGrokConnection(message.apiKey, message.model);
 				return;
 			case 'generateMemoryBank':
 				this._generateMemoryBank();
@@ -2565,6 +2567,17 @@ class ClaudeChatProvider {
 	}
 
 	private _getHtmlForWebview(): string {
+		// Get webview reference - try panel first, then sidebar webview
+		const webview = this._panel?.webview || this._webview;
+
+		if (webview) {
+			// Create URI for the icon
+			const iconUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'icon.png'));
+
+			// Replace placeholder in HTML with actual icon URI
+			return html.replace('{{ICON_URI}}', iconUri.toString());
+		}
+
 		return html;
 	}
 
@@ -2587,7 +2600,10 @@ class ClaudeChatProvider {
 			'azure.apiVersion': config.get<string>('azure.apiVersion', '2024-02-15-preview'),
 			// DeepSeek settings
 			'deepseek.apiKey': config.get<string>('deepseek.apiKey', ''),
-			'deepseek.model': config.get<string>('deepseek.model', 'deepseek-chat')
+			'deepseek.model': config.get<string>('deepseek.model', 'deepseek-chat'),
+			// Grok settings
+			'grok.apiKey': config.get<string>('grok.apiKey', ''),
+			'grok.model': config.get<string>('grok.model', 'grok-beta')
 		};
 
 		this._postMessage({
@@ -2694,6 +2710,37 @@ class ClaudeChatProvider {
 			}
 		} catch (error: any) {
 			this._postMessage({ type: 'deepseekTestResult', success: false, error: error.message || 'Connection failed' });
+		}
+	}
+
+	private async _testGrokConnection(apiKey: string, model: string): Promise<void> {
+		try {
+			const response = await fetch('https://api.x.ai/v1/chat/completions', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'Authorization': `Bearer ${apiKey}`
+				},
+				body: JSON.stringify({
+					model: model || 'grok-beta',
+					messages: [{ role: 'user', content: 'Hi' }],
+					max_tokens: 10,
+					temperature: 0
+				})
+			});
+
+			if (response.ok) {
+				this._postMessage({ type: 'grokTestResult', success: true });
+			} else {
+				const errorData: any = await response.json().catch(() => ({}));
+				// xAI error format: { "code": "...", "error": "..." } where error is a string
+				const errorMessage = typeof errorData?.error === 'string'
+					? errorData.error
+					: errorData?.error?.message || `HTTP ${response.status}`;
+				this._postMessage({ type: 'grokTestResult', success: false, error: errorMessage });
+			}
+		} catch (error: any) {
+			this._postMessage({ type: 'grokTestResult', success: false, error: error.message || 'Connection failed' });
 		}
 	}
 

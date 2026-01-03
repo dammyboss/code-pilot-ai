@@ -15,6 +15,8 @@ export interface MCPTool {
     description: string;
     inputSchema: any;
     serverName: string;
+    sanitizedServerName?: string;
+    sanitizedToolName?: string;
 }
 
 interface JsonRpcRequest {
@@ -197,7 +199,33 @@ class MCPServerConnection {
                 throw new Error(`Failed to connect to remote MCP server: ${response.status}`);
             }
 
-            const result: any = await response.json();
+            // Check if response is SSE format
+            const contentType = response.headers.get('content-type') || '';
+            let result: any;
+
+            if (contentType.includes('text/event-stream')) {
+                // Handle SSE response
+                const text = await response.text();
+                const lines = text.split('\n');
+                let jsonData = '';
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        jsonData = line.substring(6);
+                        break;
+                    }
+                }
+
+                if (jsonData) {
+                    result = JSON.parse(jsonData);
+                } else {
+                    throw new Error('No data found in SSE response');
+                }
+            } else {
+                // Standard JSON response
+                result = await response.json();
+            }
+
             if (result.error) {
                 throw new Error(result.error.message);
             }
@@ -217,7 +245,33 @@ class MCPServerConnection {
                 })
             });
 
-            const toolsResult: any = await toolsResponse.json();
+            // Parse tools response (may be SSE format)
+            const toolsContentType = toolsResponse.headers.get('content-type') || '';
+            let toolsResult: any;
+
+            if (toolsContentType.includes('text/event-stream')) {
+                // Handle SSE response
+                const toolsText = await toolsResponse.text();
+                const toolsLines = toolsText.split('\n');
+                let toolsJsonData = '';
+
+                for (const line of toolsLines) {
+                    if (line.startsWith('data: ')) {
+                        toolsJsonData = line.substring(6);
+                        break;
+                    }
+                }
+
+                if (toolsJsonData) {
+                    toolsResult = JSON.parse(toolsJsonData);
+                } else {
+                    throw new Error('No tools data found in SSE response');
+                }
+            } else {
+                // Standard JSON response
+                toolsResult = await toolsResponse.json();
+            }
+
             if (toolsResult.result?.tools) {
                 this.tools = toolsResult.result.tools.map((tool: any) => ({
                     name: tool.name,
@@ -364,7 +418,33 @@ class MCPServerConnection {
                 })
             });
 
-            const result: any = await response.json();
+            // Parse response (may be SSE format)
+            const callContentType = response.headers.get('content-type') || '';
+            let result: any;
+
+            if (callContentType.includes('text/event-stream')) {
+                // Handle SSE response
+                const callText = await response.text();
+                const callLines = callText.split('\n');
+                let callJsonData = '';
+
+                for (const line of callLines) {
+                    if (line.startsWith('data: ')) {
+                        callJsonData = line.substring(6);
+                        break;
+                    }
+                }
+
+                if (callJsonData) {
+                    result = JSON.parse(callJsonData);
+                } else {
+                    throw new Error('No data found in SSE response');
+                }
+            } else {
+                // Standard JSON response
+                result = await response.json();
+            }
+
             if (result.error) {
                 throw new Error(result.error.message);
             }
@@ -452,11 +532,17 @@ export class MCPClient {
 
     getAllTools(): MCPTool[] {
         const tools: MCPTool[] = [];
+
+        // Get tools from manually configured MCP servers
         for (const [name, server] of this.servers) {
             if (server.isActive()) {
                 tools.push(...server.getTools());
             }
         }
+
+        // Add VS Code native MCP tools
+        tools.push(...this.getVSCodeMCPTools());
+
         return tools;
     }
 
@@ -501,12 +587,23 @@ export class MCPClient {
         return sanitized;
     }
 
+    private sanitizeToolName(name: string): string {
+        // Replace any character that's not alphanumeric, underscore, or hyphen with underscore
+        return name.replace(/[^a-zA-Z0-9_-]/g, '_');
+    }
+
     getToolsForAPI(format: 'anthropic' | 'azure'): any[] {
         const mcpTools = this.getAllTools();
 
+        // Store sanitized names in tool metadata for later lookup
+        mcpTools.forEach(tool => {
+            tool.sanitizedServerName = this.sanitizeToolName(tool.serverName);
+            tool.sanitizedToolName = this.sanitizeToolName(tool.name);
+        });
+
         if (format === 'anthropic') {
             return mcpTools.map(tool => ({
-                name: `mcp_${tool.serverName}_${tool.name}`,
+                name: `mcp_${tool.sanitizedServerName}_${tool.sanitizedToolName}`,
                 description: `[MCP: ${tool.serverName}] ${tool.description}`,
                 input_schema: this.sanitizeSchema(tool.inputSchema)
             }));
@@ -514,7 +611,7 @@ export class MCPClient {
             return mcpTools.map(tool => ({
                 type: 'function',
                 function: {
-                    name: `mcp_${tool.serverName}_${tool.name}`,
+                    name: `mcp_${tool.sanitizedServerName}_${tool.sanitizedToolName}`,
                     description: `[MCP: ${tool.serverName}] ${tool.description}`,
                     parameters: this.sanitizeSchema(tool.inputSchema)
                 }
@@ -523,21 +620,30 @@ export class MCPClient {
     }
 
     async callTool(fullToolName: string, args: any): Promise<{ success: boolean; result: string; error?: string }> {
-        // Parse the tool name: mcp_serverName_toolName
-        const match = fullToolName.match(/^mcp_([^_]+)_(.+)$/);
-        if (!match) {
-            return { success: false, result: '', error: `Invalid MCP tool name format: ${fullToolName}` };
+        // Find the tool in our list to get the original server name
+        const allTools = this.getAllTools();
+        const tool = allTools.find(t =>
+            fullToolName === `mcp_${t.sanitizedServerName}_${t.sanitizedToolName}`
+        );
+
+        if (!tool) {
+            return { success: false, result: '', error: `MCP tool not found: ${fullToolName}` };
         }
 
-        const [, serverName, toolName] = match;
-        const server = this.servers.get(serverName);
+        // Check if this is a VS Code native MCP tool
+        if (tool.serverName === 'VSCode-MCP') {
+            return await this.callVSCodeTool(tool.name, args);
+        }
+
+        // Otherwise, use the regular MCP server connection
+        const server = this.servers.get(tool.serverName);
 
         if (!server || !server.isActive()) {
-            return { success: false, result: '', error: `MCP server not connected: ${serverName}` };
+            return { success: false, result: '', error: `MCP server not connected: ${tool.serverName}` };
         }
 
         try {
-            const result = await server.callTool(toolName, args);
+            const result = await server.callTool(tool.name, args);
 
             // Extract content from result
             let content = '';
@@ -570,5 +676,66 @@ export class MCPClient {
             server.disconnect();
         }
         this.servers.clear();
+    }
+
+    // VS Code native MCP tools support
+    getVSCodeMCPTools(): MCPTool[] {
+        const vscodeTools: MCPTool[] = [];
+
+        try {
+            // Access VS Code's language model tools API
+            if (vscode.lm && (vscode.lm as any).tools) {
+                const tools = (vscode.lm as any).tools as any[];
+
+                for (const tool of tools) {
+                    // Filter for MCP tools (they usually have a specific naming pattern or metadata)
+                    if (tool.name && tool.name.startsWith('mcp_') || tool.tags?.includes('mcp')) {
+                        vscodeTools.push({
+                            name: tool.name,
+                            description: tool.description || '',
+                            inputSchema: tool.inputSchema || { type: 'object', properties: {} },
+                            serverName: 'VSCode-MCP',
+                            sanitizedServerName: 'VSCode-MCP',
+                            sanitizedToolName: this.sanitizeToolName(tool.name)
+                        });
+                    }
+                }
+
+                this.outputChannel.appendLine(`Discovered ${vscodeTools.length} VS Code MCP tools`);
+            }
+        } catch (error: any) {
+            this.outputChannel.appendLine(`Failed to discover VS Code MCP tools: ${error.message}`);
+        }
+
+        return vscodeTools;
+    }
+
+    async callVSCodeTool(toolName: string, args: any): Promise<{ success: boolean; result: string; error?: string }> {
+        try {
+            if (!vscode.lm || !(vscode.lm as any).invokeTool) {
+                return { success: false, result: '', error: 'VS Code LM API not available' };
+            }
+
+            // Invoke the tool using VS Code's API
+            const result = await (vscode.lm as any).invokeTool(toolName, { input: args });
+
+            // Extract text content from the result
+            let content = '';
+            if (result && Array.isArray(result)) {
+                for (const part of result) {
+                    if (part.text) {
+                        content += part.text;
+                    }
+                }
+            } else if (typeof result === 'string') {
+                content = result;
+            } else {
+                content = JSON.stringify(result);
+            }
+
+            return { success: true, result: content };
+        } catch (error: any) {
+            return { success: false, result: '', error: error.message };
+        }
     }
 }

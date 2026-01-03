@@ -20,12 +20,18 @@ const html = `<!DOCTYPE html>
 		</div>
 		<div style="display: flex; gap: 8px; align-items: center;">
 			<div id="sessionStatus" class="session-status" style="display: none;">No session</div>
-			<button class="btn outlined" id="settingsBtn" onclick="toggleSettings()" title="Settings">⚙️</button>
+			<button class="btn outlined" id="settingsBtn" onclick="toggleSettings()" title="Settings">
+				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+					<circle cx="12" cy="12" r="3"></circle>
+				</svg>
+			</button>
 			<div class="conversations-dropdown" style="position: relative;">
-				<button class="btn outlined" id="historyBtn" onclick="toggleConversationHistory()" style="font-size: 11px;">
-					Conversations
-					<svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="margin-left: 4px;">
-						<path d="M1 2.5l3 3 3-3"></path>
+				<button class="btn outlined" id="historyBtn" onclick="toggleConversationHistory()" title="View chat history">
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+						<path d="M3 3v5h5"></path>
+						<polyline points="12 6 12 12 16 14"></polyline>
 					</svg>
 				</button>
 			</div>
@@ -45,7 +51,18 @@ const html = `<!DOCTYPE html>
 
 	<div class="chat-container" id="chatContainer">
 		<div class="messages" id="messages"></div>
-		
+
+		<!-- Welcome Screen -->
+		<div id="welcomeScreen" class="welcome-screen">
+			<div class="welcome-content">
+				<div class="welcome-logo">
+					<img src="{{ICON_URI}}" alt="Code Pilot AI" class="welcome-icon-img" />
+					<h1>Code Pilot AI</h1>
+				</div>
+				<p class="welcome-text" id="welcomeText">Ready to assist with your coding tasks...</p>
+			</div>
+		</div>
+
 		<!-- WSL Alert for Windows users -->
 		<div id="wslAlert" class="wsl-alert" style="display: none;">
 			<div class="wsl-alert-content">
@@ -119,7 +136,7 @@ const html = `<!DOCTYPE html>
 			<div class="textarea-container">
 				<div class="textarea-wrapper">
 					<div id="imagePreviewContainer" class="image-preview-container" style="display: none;"></div>
-					<textarea class="input-field" id="messageInput" placeholder="Type your message..." rows="1" style="font-size: 14px;"></textarea>
+					<textarea class="input-field" id="messageInput" placeholder="Ask a question. Use @ to add context, / for quick actions" rows="1" style="font-size: 14px;"></textarea>
 					<div class="input-controls">
 						<div class="left-controls">
 							<select id="modelSelector" class="model-selector" onchange="onModelSelectorChange()" title="Select model" style="font-size: 12px;">
@@ -241,6 +258,7 @@ const html = `<!DOCTYPE html>
 							<option value="anthropic">Anthropic (Claude)</option>
 							<option value="azure">Azure OpenAI</option>
 							<option value="deepseek">DeepSeek</option>
+							<option value="grok">Grok (xAI)</option>
 						</select>
 					</div>
 
@@ -289,6 +307,18 @@ const html = `<!DOCTYPE html>
 						<div style="display: flex; gap: 8px; align-items: center;">
 							<button class="btn" onclick="testDeepSeekConnection()" id="testDeepSeekBtn" style="font-size: 11px; padding: 6px 12px;">Test Connection</button>
 							<span id="deepseekTestResult" class="test-result"></span>
+						</div>
+					</div>
+
+					<!-- Grok Configuration -->
+					<div id="grokConfigSection" class="provider-config-section" style="display: none;">
+						<div style="margin-bottom: 12px;">
+							<label style="display: block; margin-bottom: 4px; font-size: 11px; color: var(--vscode-descriptionForeground);">API Key</label>
+							<input type="password" id="grok-api-key" class="file-search-input" style="width: 100%; font-size: 11px;" placeholder="xai-...">
+						</div>
+						<div style="display: flex; gap: 8px; align-items: center;">
+							<button class="btn" onclick="testGrokConnection()" id="testGrokBtn" style="font-size: 11px; padding: 6px 12px;">Test Connection</button>
+							<span id="grokTestResult" class="test-result"></span>
 						</div>
 					</div>
 				</div>
@@ -552,6 +582,27 @@ const html = `<!DOCTYPE html>
 		// Image attachment management
 		let attachedImages = [];
 		const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+
+		// Welcome screen animation
+		const welcomeMessages = [
+			"Ready to assist with your coding tasks...",
+			"Ask me anything about your code",
+			"I can help with debugging, refactoring, and more",
+			"Use @ to add files, / for quick actions"
+		];
+		let currentWelcomeIndex = 0;
+		const welcomeTextEl = document.getElementById('welcomeText');
+		const welcomeScreen = document.getElementById('welcomeScreen');
+
+		function rotateWelcomeText() {
+			if (welcomeTextEl && welcomeScreen && !welcomeScreen.classList.contains('hidden')) {
+				currentWelcomeIndex = (currentWelcomeIndex + 1) % welcomeMessages.length;
+				welcomeTextEl.textContent = welcomeMessages[currentWelcomeIndex];
+			}
+		}
+
+		// Rotate welcome message every 8 seconds
+		setInterval(rotateWelcomeText, 8000);
 
 		// Stub function for state saving (disabled)
 		function saveWebviewState() {
@@ -1424,6 +1475,11 @@ const html = `<!DOCTYPE html>
 			const hasImages = attachedImages.length > 0;
 
 			if (text || hasImages) {
+				// Hide welcome screen on first message
+				if (welcomeScreen && !welcomeScreen.classList.contains('hidden')) {
+					welcomeScreen.classList.add('hidden');
+				}
+
 				// Prepare image data for sending
 				const images = attachedImages.map(img => ({
 					filePath: img.filePath,
@@ -2251,7 +2307,8 @@ const html = `<!DOCTYPE html>
 			const providerMap = {
 				'anthropic': { resultId: 'anthropicTestResult', btnId: 'testAnthropicBtn' },
 				'azure': { resultId: 'azureTestResult', btnId: 'testAzureBtn' },
-				'deepseek': { resultId: 'deepseekTestResult', btnId: 'testDeepSeekBtn' }
+				'deepseek': { resultId: 'deepseekTestResult', btnId: 'testDeepSeekBtn' },
+				'grok': { resultId: 'grokTestResult', btnId: 'testGrokBtn' }
 			};
 
 			const config = providerMap[provider];
@@ -2486,7 +2543,10 @@ const html = `<!DOCTYPE html>
 					// Clear all messages from UI
 					messagesDiv.innerHTML = '';
 					hideSessionInfo();
-					addMessage('🆕 Started new session', 'system');
+					// Show welcome screen again
+					if (welcomeScreen && welcomeScreen.classList.contains('hidden')) {
+						welcomeScreen.classList.remove('hidden');
+					}
 					// Reset totals
 					totalCost = 0;
 					totalTokensInput = 0;
@@ -2579,6 +2639,9 @@ const html = `<!DOCTYPE html>
 					break;
 				case 'deepseekTestResult':
 					handleTestResult('deepseek', message);
+					break;
+				case 'grokTestResult':
+					handleTestResult('grok', message);
 					break;
 			}
 		});
@@ -3488,6 +3551,7 @@ const html = `<!DOCTYPE html>
 			document.getElementById('anthropicConfigSection').style.display = provider === 'anthropic' ? 'block' : 'none';
 			document.getElementById('azureConfigSection').style.display = provider === 'azure' ? 'block' : 'none';
 			document.getElementById('deepseekConfigSection').style.display = provider === 'deepseek' ? 'block' : 'none';
+			document.getElementById('grokConfigSection').style.display = provider === 'grok' ? 'block' : 'none';
 
 			// Update global provider state
 			currentProvider = provider;
@@ -3551,6 +3615,18 @@ const html = `<!DOCTYPE html>
 					modelSelector.appendChild(option);
 				});
 				defaultModel = 'deepseek-chat';
+			} else if (provider === 'grok') {
+				const grokModels = [
+					{ value: 'grok-beta', label: 'Grok Beta' },
+					{ value: 'grok-vision-beta', label: 'Grok Vision Beta' }
+				];
+				grokModels.forEach(model => {
+					const option = document.createElement('option');
+					option.value = model.value;
+					option.textContent = model.label;
+					modelSelector.appendChild(option);
+				});
+				defaultModel = 'grok-beta';
 			}
 
 			// Set default value to ensure something is selected
@@ -3649,6 +3725,30 @@ const html = `<!DOCTYPE html>
 			});
 		}
 
+		function testGrokConnection() {
+			const apiKey = document.getElementById('grok-api-key').value.trim();
+			const modelSelector = document.getElementById('modelSelector');
+			const model = modelSelector ? modelSelector.value : 'grok-beta';
+			const resultSpan = document.getElementById('grokTestResult');
+			const testBtn = document.getElementById('testGrokBtn');
+
+			if (!apiKey) {
+				resultSpan.textContent = 'Please enter an API key';
+				resultSpan.className = 'test-result error';
+				return;
+			}
+
+			testBtn.disabled = true;
+			resultSpan.textContent = 'Testing...';
+			resultSpan.className = 'test-result loading';
+
+			vscode.postMessage({
+				type: 'testGrokConnection',
+				apiKey: apiKey,
+				model: model
+			});
+		}
+
 		function updateSettings() {
 			// Get all settings elements with null checks
 			const wslEnabledEl = document.getElementById('wsl-enabled');
@@ -3664,6 +3764,7 @@ const html = `<!DOCTYPE html>
 			const azureDeploymentEl = document.getElementById('azure-deployment');
 			const azureVersionEl = document.getElementById('azure-version');
 			const deepseekApiKeyEl = document.getElementById('deepseek-api-key');
+			const grokApiKeyEl = document.getElementById('grok-api-key');
 
 			const wslEnabled = wslEnabledEl ? wslEnabledEl.checked : false;
 			const wslDistro = wslDistroEl ? wslDistroEl.value : 'Ubuntu';
@@ -3678,6 +3779,7 @@ const html = `<!DOCTYPE html>
 			const azureDeployment = azureDeploymentEl ? azureDeploymentEl.value : '';
 			const azureVersion = azureVersionEl ? azureVersionEl.value : '2024-02-15-preview';
 			const deepseekApiKey = deepseekApiKeyEl ? deepseekApiKeyEl.value : '';
+			const grokApiKey = grokApiKeyEl ? grokApiKeyEl.value : '';
 
 			// Send settings to VS Code immediately
 			vscode.postMessage({
@@ -3697,7 +3799,9 @@ const html = `<!DOCTYPE html>
 					'azure.apiVersion': azureVersion,
 					'azure.model': provider === 'azure' ? selectedModel : 'gpt-4o',
 					'deepseek.apiKey': deepseekApiKey,
-					'deepseek.model': provider === 'deepseek' ? selectedModel : 'deepseek-chat'
+					'deepseek.model': provider === 'deepseek' ? selectedModel : 'deepseek-chat',
+					'grok.apiKey': grokApiKey,
+					'grok.model': provider === 'grok' ? selectedModel : 'grok-beta'
 				}
 			});
 		}
@@ -4339,6 +4443,10 @@ const html = `<!DOCTYPE html>
 				const deepseekApiKeyEl = document.getElementById('deepseek-api-key');
 				if (deepseekApiKeyEl) deepseekApiKeyEl.value = message.data['deepseek.apiKey'] || '';
 
+				// Grok settings
+				const grokApiKeyEl = document.getElementById('grok-api-key');
+				if (grokApiKeyEl) grokApiKeyEl.value = message.data['grok.apiKey'] || '';
+
 				// Update global provider and repopulate model selector
 				currentProvider = provider;
 				updateModelSelectorOptions(provider);
@@ -4353,6 +4461,8 @@ const html = `<!DOCTYPE html>
 						modelToSet = message.data['azure.model'] || 'gpt-4o';
 					} else if (provider === 'deepseek') {
 						modelToSet = message.data['deepseek.model'] || 'deepseek-chat';
+					} else if (provider === 'grok') {
+						modelToSet = message.data['grok.model'] || 'grok-beta';
 					}
 					// Verify the option exists before setting
 					const optionExists = Array.from(modelSelectorEl.options).some(opt => opt.value === modelToSet);
