@@ -2753,62 +2753,17 @@ const html = `<!DOCTYPE html>
 				alwaysAllow: alwaysAllow
 			});
 
-			// Update the UI to show the decision
+			// Update the UI to show the decision - hide the large card and replace with compact message
 			const permissionMsg = document.querySelector(\`.permission-request-new:has([onclick*="\${id}"])\`);
 			if (permissionMsg) {
-				const card = permissionMsg.querySelector('.permission-card-new');
-				const actionsDiv = permissionMsg.querySelector('.permission-actions-new');
-				const bodyDiv = permissionMsg.querySelector('.permission-body-new');
+				// Remove the permission card entirely
+				permissionMsg.remove();
 
-				let decisionText = approved ? 'Permission Granted' : 'Permission Denied';
-				let decisionDescription = '';
-
-				if (alwaysAllow && approved) {
-					decisionText = 'Permission Granted & Always Allow Set';
-					decisionDescription = 'This permission has been saved and will be auto-approved in the future';
-				} else if (approved) {
-					decisionDescription = 'This operation was allowed for this request only';
-				} else {
-					decisionDescription = 'This operation was denied and will not execute';
+				// Don't show any message for approved permissions - keeps the flow clean
+				// Only show denied permissions as errors
+				if (!approved) {
+					addMessage('❌ Permission Denied: Operation was not executed', 'system');
 				}
-
-				const decisionClass = approved ? 'approved' : 'denied';
-				const icon = approved ? (alwaysAllow ? 'shield-check' : 'check-circle') : 'x-circle';
-
-				// Hide action buttons
-				actionsDiv.style.display = 'none';
-
-				// Add decision status
-				const decisionDiv = document.createElement('div');
-				decisionDiv.className = \`permission-decision-new \${decisionClass}\`;
-				decisionDiv.innerHTML = \`
-					<div class="decision-icon">
-						\${icon === 'shield-check' ? \`
-							<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-								<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-								<path d="M9 12l2 2 4-4"/>
-							</svg>
-						\` : icon === 'check-circle' ? \`
-							<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-								<path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
-								<polyline points="22 4 12 14.01 9 11.01"/>
-							</svg>
-						\` : \`
-							<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-								<circle cx="12" cy="12" r="10"/>
-								<line x1="15" y1="9" x2="9" y2="15"/>
-								<line x1="9" y1="9" x2="15" y2="15"/>
-							</svg>
-						\`}
-					</div>
-					<div class="decision-content">
-						<div class="decision-title">\${decisionText}</div>
-						<div class="decision-description">\${decisionDescription}</div>
-					</div>
-				\`;
-
-				bodyDiv.appendChild(decisionDiv);
-				card.classList.add('permission-resolved', decisionClass);
 			}
 		}
 
@@ -2952,7 +2907,18 @@ const html = `<!DOCTYPE html>
 		function parseSimpleMarkdown(markdown) {
 			// First, handle code blocks before line-by-line processing
 			let processedMarkdown = markdown;
-			
+
+			// Add line breaks after sentences for better readability
+			// Match: period/exclamation/question followed by space and capital letter
+			// But avoid breaking: "Dr. Smith", "U.S. Government", abbreviations, decimals, etc.
+			processedMarkdown = processedMarkdown.replace(/([.!?])(\s+)([A-Z][a-z])/g, function(match, punctuation, space, nextChar) {
+				// Only add newline if not already followed by a newline
+				if (!space.includes('\\n')) {
+					return punctuation + '\\n\\n' + nextChar;
+				}
+				return match;
+			});
+
 			// Store code blocks temporarily to protect them from further processing
 			const codeBlockPlaceholders = [];
 			
