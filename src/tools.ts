@@ -259,6 +259,15 @@ export class ToolExecutor {
         }
 
         fs.writeFileSync(filePath, args.content, 'utf-8');
+
+        // Open the file in VS Code editor
+        try {
+            const document = await vscode.workspace.openTextDocument(filePath);
+            await vscode.window.showTextDocument(document, { preview: false });
+        } catch (error: any) {
+            this.outputChannel.appendLine(`Failed to open file in editor: ${error.message}`);
+        }
+
         return { success: true, result: `Successfully wrote ${args.content.length} characters to ${filePath}` };
     }
 
@@ -282,6 +291,15 @@ export class ToolExecutor {
         }
 
         fs.writeFileSync(filePath, content, 'utf-8');
+
+        // Open the file in VS Code editor
+        try {
+            const document = await vscode.workspace.openTextDocument(filePath);
+            await vscode.window.showTextDocument(document, { preview: false });
+        } catch (error: any) {
+            this.outputChannel.appendLine(`Failed to open file in editor: ${error.message}`);
+        }
+
         return { success: true, result: `Successfully edited ${filePath}` };
     }
 
