@@ -18,24 +18,17 @@ const html = `<!DOCTYPE html>
 				<span class="session-label">session</span>
 			</div> -->
 		</div>
-		<div style="display: flex; gap: 8px; align-items: center;">
+		<div class="header-actions">
 			<div id="sessionStatus" class="session-status" style="display: none;">No session</div>
-			<button class="btn outlined" id="settingsBtn" onclick="toggleSettings()" title="Settings">
-				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-					<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
-					<circle cx="12" cy="12" r="3"></circle>
-				</svg>
+			<button class="icon-btn" id="settingsBtn" title="Settings" onclick="showSettingsModal()">
+				<img src="{{SETTINGS_ICON}}" width="16" height="16" alt="Settings">
 			</button>
-			<div class="conversations-dropdown" style="position: relative;">
-				<button class="btn outlined" id="historyBtn" onclick="toggleConversationHistory()" title="View chat history">
-					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
-						<path d="M3 3v5h5"></path>
-						<polyline points="12 6 12 12 16 14"></polyline>
-					</svg>
-				</button>
-			</div>
-			<button class="btn primary" id="newSessionBtn" onclick="newSession()">New Chat</button>
+			<button class="icon-btn" id="historyBtn" onclick="toggleConversationHistory()" title="View chat history">
+				<img src="{{HISTORY_ICON}}" width="16" height="16" alt="History">
+			</button>
+			<button class="icon-btn" id="newSessionBtn" onclick="newSession()" title="New Chat">
+				<img src="{{NEW_CHAT_ICON}}" width="16" height="16" alt="New Chat">
+			</button>
 		</div>
 	</div>
 	
@@ -254,16 +247,37 @@ const html = `<!DOCTYPE html>
 				<div id="modelTabContent" class="settings-tab-content">
 					<div style="margin-bottom: 16px;">
 						<label style="display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600;">AI Provider</label>
-						<select id="settings-provider" class="settings-select" onchange="onSettingsProviderChange()">
-							<option value="anthropic">Anthropic (Claude)</option>
-							<option value="azure">Azure OpenAI</option>
-							<option value="deepseek">DeepSeek</option>
-							<option value="grok">Grok (xAI)</option>
-						</select>
+						<div id="settings-provider-dropdown" class="custom-dropdown">
+							<div class="custom-dropdown-selected" tabindex="0">
+								<img class="custom-dropdown-icon" src="{{ANTHROPIC_ICON}}" alt="">
+								<span class="custom-dropdown-text">Anthropic (Claude)</span>
+								<svg class="custom-dropdown-arrow" viewBox="0 0 16 16" fill="currentColor">
+									<path d="M4 6l4 4 4-4"/>
+								</svg>
+							</div>
+							<div class="custom-dropdown-list">
+								<div class="custom-dropdown-item selected" data-value="anthropic" data-icon="{{ANTHROPIC_ICON}}">
+									<img class="custom-dropdown-icon" src="{{ANTHROPIC_ICON}}" alt="">
+									<span>Anthropic (Claude)</span>
+								</div>
+								<div class="custom-dropdown-item" data-value="azure" data-icon="{{AZURE_ICON}}">
+									<img class="custom-dropdown-icon" src="{{AZURE_ICON}}" alt="">
+									<span>Azure OpenAI</span>
+								</div>
+								<div class="custom-dropdown-item" data-value="deepseek" data-icon="{{DEEPSEEK_ICON}}">
+									<img class="custom-dropdown-icon" src="{{DEEPSEEK_ICON}}" alt="">
+									<span>DeepSeek</span>
+								</div>
+								<div class="custom-dropdown-item" data-value="grok" data-icon="{{GROK_ICON}}">
+									<img class="custom-dropdown-icon" src="{{GROK_ICON}}" alt="">
+									<span>Grok (xAI)</span>
+								</div>
+							</div>
+						</div>
 					</div>
 
 					<!-- Anthropic Configuration -->
-					<div id="anthropicConfigSection" class="provider-config-section">
+					<div id="anthropicConfigSection" class="provider-config-section" style="display: block;">
 						<div style="margin-bottom: 12px;">
 							<label style="display: block; margin-bottom: 4px; font-size: 11px; color: var(--vscode-descriptionForeground);">API Key</label>
 							<input type="password" id="anthropic-api-key" class="file-search-input" style="width: 100%; font-size: 11px;" placeholder="sk-ant-api03-...">
@@ -569,6 +583,8 @@ const html = `<!DOCTYPE html>
 		const fileSearchInput = document.getElementById('fileSearchInput');
 		const fileList = document.getElementById('fileList');
 		const imageBtn = document.getElementById('imageBtn');
+		const settingsBtn = document.getElementById('settingsBtn');
+		const settingsModal = document.getElementById('settingsModal');
 
 		let isProcessRunning = false;
 		let filteredFiles = [];
@@ -2052,7 +2068,7 @@ const html = `<!DOCTYPE html>
 			dismissWSLAlert();
 			
 			// Open settings modal
-			toggleSettings();
+			showSettingsModal();
 		}
 
 		function executeSlashCommand(command) {
@@ -2300,6 +2316,23 @@ const html = `<!DOCTYPE html>
 					});
 				}
 			}
+		}
+
+		function showApplyDiffPreview(codeId) {
+			const codeElement = document.getElementById(codeId);
+			if (!codeElement) return;
+			
+			const rawCode = codeElement.getAttribute('data-raw-code');
+			if (!rawCode) return;
+			
+			const decodedCode = rawCode.replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+			const language = codeElement.className.replace('language-', '');
+			
+			vscode.postMessage({
+				type: 'showDiffPreview',
+				code: decodedCode,
+				language: language
+			});
 		}
 
 		// Handle test connection results
@@ -2924,7 +2957,7 @@ const html = `<!DOCTYPE html>
 			
 			// Handle multi-line code blocks with triple backticks
 			// Using RegExp constructor to avoid backtick conflicts in template literal
-			const codeBlockRegex = new RegExp('\\\`\\\`\\\`(\\\\w*)\\n([\\\\s\\\\S]*?)\\\`\\\`\\\`', 'g');
+			const codeBlockRegex = new RegExp('\`\`\`(\\\\w*)\\n([\\\\s\\\\S]*?)\`\`\`', 'g');
 			processedMarkdown = processedMarkdown.replace(codeBlockRegex, function(match, lang, code) {
 				const language = lang || 'plaintext';
 				// Process code line by line to preserve formatting like diff implementation
@@ -2940,7 +2973,7 @@ const html = `<!DOCTYPE html>
 				const codeId = 'code_' + Math.random().toString(36).substr(2, 9);
 				const escapedCode = escapeHtml(code);
 				
-				const codeBlockHtml = '<div class="code-block-container"><div class="code-block-header"><span class="code-block-language">' + language + '</span><button class="code-copy-btn" onclick="copyCodeBlock(\\\'' + codeId + '\\\')" title="Copy code"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg></button></div><pre class="code-block"><code class="language-' + language + '" id="' + codeId + '" data-raw-code="' + escapedCode.replace(/"/g, '&quot;') + '">' + codeHtml + '</code></pre></div>';
+				const codeBlockHtml = '<div class="code-block-container"><div class="code-block-header"><span class="code-block-language">' + language + '</span><div class="code-actions"><button class="code-apply-btn" onclick="showApplyDiffPreview(\\\'' + codeId + '\\\')" title="Apply to file"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> Apply</button><button class="code-copy-btn" onclick="copyCodeBlock(\\\'' + codeId + '\\\')" title="Copy code"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg></button></div></div><pre class="code-block"><code class="language-' + language + '" id="' + codeId + '" data-raw-code="' + escapedCode.replace(/"/g, '&quot;') + '">' + codeHtml + '</code></pre></div>';
 				
 				// Store the code block and return a placeholder
 				const placeholder = '__CODEBLOCK_' + codeBlockPlaceholders.length + '__';
@@ -2949,7 +2982,7 @@ const html = `<!DOCTYPE html>
 			});
 			
 			// Handle inline code with single backticks
-			const inlineCodeRegex = new RegExp('\\\`([^\\\`]+)\\\`', 'g');
+			const inlineCodeRegex = new RegExp('\`([^\`]+)\`', 'g');
 			processedMarkdown = processedMarkdown.replace(inlineCodeRegex, '<code>$1</code>');
 
 			// Handle tables - detect and convert markdown tables to HTML
@@ -3460,25 +3493,32 @@ const html = `<!DOCTYPE html>
 
 		// Settings functions
 
-		function toggleSettings() {
-			const settingsModal = document.getElementById('settingsModal');
-			if (settingsModal.style.display === 'none') {
-				// Request current settings from VS Code
-				vscode.postMessage({
-					type: 'getSettings'
-				});
-				// Request current permissions
-				vscode.postMessage({
-					type: 'getPermissions'
-				});
-				settingsModal.style.display = 'flex';
-			} else {
-				hideSettingsModal();
+		function showSettingsModal() {
+			const settingsModalEl = document.getElementById('settingsModal');
+			if (!settingsModalEl) {
+				return;
 			}
+
+			const providerDropdown = document.getElementById('settings-provider-dropdown');
+			if (providerDropdown) {
+				const selectedEl = providerDropdown.querySelector('.custom-dropdown-selected');
+				if (selectedEl && !selectedEl.hasAttribute('data-initialized')) {
+					initProviderDropdown();
+					selectedEl.setAttribute('data-initialized', 'true');
+				}
+			}
+			vscode.postMessage({ type: 'getSettings' });
+			vscode.postMessage({ type: 'getPermissions' });
+			settingsModalEl.style.display = 'flex';
 		}
 
 		function hideSettingsModal() {
-			document.getElementById('settingsModal').style.display = 'none';
+			const modal = document.getElementById('settingsModal');
+			modal.classList.add('closing');
+			setTimeout(() => {
+				modal.style.display = 'none';
+				modal.classList.remove('closing');
+			}, 200);
 		}
 
 		// Settings tab switching
@@ -3513,7 +3553,12 @@ const html = `<!DOCTYPE html>
 
 		// Provider switching in settings
 		function onSettingsProviderChange(autoSave = false) {
-			const provider = document.getElementById('settings-provider').value;
+			const providerDropdown = document.getElementById('settings-provider-dropdown');
+			if (!providerDropdown) return;
+			
+			const selectedItem = providerDropdown.querySelector('.custom-dropdown-item.selected');
+			const provider = selectedItem ? selectedItem.dataset.value : 'anthropic';
+			
 			document.getElementById('anthropicConfigSection').style.display = provider === 'anthropic' ? 'block' : 'none';
 			document.getElementById('azureConfigSection').style.display = provider === 'azure' ? 'block' : 'none';
 			document.getElementById('deepseekConfigSection').style.display = provider === 'deepseek' ? 'block' : 'none';
@@ -3527,6 +3572,127 @@ const html = `<!DOCTYPE html>
 
 			// Only auto-save if explicitly requested (not when loading settings)
 			// Settings are now saved only when user clicks "Save Settings" button
+		}
+
+		// Initialize custom provider dropdown
+		function initProviderDropdown() {
+			const providerDropdown = document.getElementById('settings-provider-dropdown');
+			if (!providerDropdown) return;
+			
+			const providerSelected = providerDropdown.querySelector('.custom-dropdown-selected');
+			const providerList = providerDropdown.querySelector('.custom-dropdown-list');
+			const providerItems = providerDropdown.querySelectorAll('.custom-dropdown-item');
+
+			let focusedIndex = -1;
+
+			// Custom dropdown toggle
+			providerSelected.addEventListener('click', () => {
+				const isOpen = providerList.classList.contains('open');
+				if (isOpen) {
+					closeProviderDropdown();
+				} else {
+					openProviderDropdown();
+				}
+			});
+
+			// Keyboard navigation
+			providerSelected.addEventListener('keydown', (e) => {
+				if (e.key === 'Enter' || e.key === ' ') {
+					e.preventDefault();
+					openProviderDropdown();
+				} else if (e.key === 'ArrowDown') {
+					e.preventDefault();
+					openProviderDropdown();
+					focusedIndex = 0;
+					updateFocus();
+				} else if (e.key === 'ArrowUp') {
+					e.preventDefault();
+					openProviderDropdown();
+					focusedIndex = providerItems.length - 1;
+					updateFocus();
+				}
+			});
+
+			providerDropdown.addEventListener('keydown', (e) => {
+				if (!providerList.classList.contains('open')) return;
+
+				if (e.key === 'ArrowDown') {
+					e.preventDefault();
+					focusedIndex = Math.min(focusedIndex + 1, providerItems.length - 1);
+					updateFocus();
+				} else if (e.key === 'ArrowUp') {
+					e.preventDefault();
+					focusedIndex = Math.max(focusedIndex - 1, 0);
+					updateFocus();
+				} else if (e.key === 'Enter') {
+					e.preventDefault();
+					if (focusedIndex >= 0) {
+						selectProvider(providerItems[focusedIndex]);
+					}
+				} else if (e.key === 'Escape') {
+					e.preventDefault();
+					closeProviderDropdown();
+				}
+			});
+
+			// Item selection
+			providerItems.forEach((item, index) => {
+				item.addEventListener('click', () => {
+					selectProvider(item);
+				});
+
+				item.addEventListener('mouseenter', () => {
+					focusedIndex = index;
+					updateFocus();
+				});
+			});
+
+			// Close on outside click
+			document.addEventListener('click', (e) => {
+				if (!providerDropdown.contains(e.target)) {
+					closeProviderDropdown();
+				}
+			});
+
+			function openProviderDropdown() {
+				providerList.classList.add('open');
+				providerSelected.classList.add('open');
+				focusedIndex = Array.from(providerItems).findIndex(item => item.classList.contains('selected'));
+				updateFocus();
+			}
+
+			function closeProviderDropdown() {
+				providerList.classList.remove('open');
+				providerSelected.classList.remove('open');
+				focusedIndex = -1;
+				updateFocus();
+			}
+
+			function updateFocus() {
+				providerItems.forEach((item, index) => {
+					item.classList.toggle('focused', index === focusedIndex);
+				});
+			}
+
+			function selectProvider(item) {
+				const value = item.dataset.value;
+				const icon = item.dataset.icon;
+				const text = item.querySelector('span').textContent;
+
+				// Update selected display
+				providerSelected.querySelector('.custom-dropdown-icon').src = icon;
+				providerSelected.querySelector('.custom-dropdown-text').textContent = text;
+
+				// Update selected state
+				providerItems.forEach(i => i.classList.remove('selected'));
+				item.classList.add('selected');
+
+				// Update provider and show/hide config sections
+				currentProvider = value;
+				onSettingsProviderChange();
+
+				closeProviderDropdown();
+			}
 		}
 
 		// Update model selector options based on provider
@@ -3722,7 +3888,7 @@ const html = `<!DOCTYPE html>
 			const wslNodePathEl = document.getElementById('wsl-node-path');
 			const wslClaudePathEl = document.getElementById('wsl-claude-path');
 			const yoloModeEl = document.getElementById('yolo-mode');
-			const settingsProviderEl = document.getElementById('settings-provider');
+			const providerDropdown = document.getElementById('settings-provider-dropdown');
 			const anthropicApiKeyEl = document.getElementById('anthropic-api-key');
 			const modelSelectorEl = document.getElementById('modelSelector');
 			const azureEndpointEl = document.getElementById('azure-endpoint');
@@ -3737,7 +3903,14 @@ const html = `<!DOCTYPE html>
 			const wslNodePath = wslNodePathEl ? wslNodePathEl.value : '/usr/bin/node';
 			const wslClaudePath = wslClaudePathEl ? wslClaudePathEl.value : '/usr/local/bin/claude';
 			const yoloMode = yoloModeEl ? yoloModeEl.checked : false;
-			const provider = settingsProviderEl ? settingsProviderEl.value : 'anthropic';
+			
+			// Get provider from custom dropdown
+			let provider = 'anthropic';
+			if (providerDropdown) {
+				const selectedItem = providerDropdown.querySelector('.custom-dropdown-item.selected');
+				provider = selectedItem ? selectedItem.dataset.value : 'anthropic';
+			}
+			
 			const anthropicApiKey = anthropicApiKeyEl ? anthropicApiKeyEl.value : '';
 			const selectedModel = modelSelectorEl ? modelSelectorEl.value : 'claude-sonnet-4-20250514';
 			const azureEndpoint = azureEndpointEl ? azureEndpointEl.value : '';
@@ -3865,6 +4038,7 @@ const html = `<!DOCTYPE html>
 				const serverInfo = server.url || (server.command ? \`\${server.command}\${server.args ? ' ' + server.args.join(' ') : ''}\` : 'MCP Server');
 				const serverNameEscaped = server.name.replace(/'/g, "\\\\'");
 				const serverJsonEscaped = JSON.stringify(server).replace(/"/g, '&quot;');
+				const tools = status.tools || [];
 
 				html += \`
 					<div class="mcp-server-item" style="border: 1px solid var(--vscode-widget-border); border-radius: 6px; padding: 12px; margin-bottom: 8px; background: var(--vscode-editor-background);">
@@ -4328,6 +4502,8 @@ const html = `<!DOCTYPE html>
 			}
 		})();
 
+		// Settings button click is handled via onclick attribute in HTML
+
 		// Detect slash commands input
 		messageInput.addEventListener('input', (e) => {
 			const value = messageInput.value;
@@ -4385,9 +4561,20 @@ const html = `<!DOCTYPE html>
 
 				// Provider settings
 				const provider = message.data['provider'] || 'anthropic';
-				const settingsProviderEl = document.getElementById('settings-provider');
-				if (settingsProviderEl) {
-					settingsProviderEl.value = provider;
+				const providerDropdown = document.getElementById('settings-provider-dropdown');
+				if (providerDropdown) {
+					const providerItems = providerDropdown.querySelectorAll('.custom-dropdown-item');
+					const providerSelected = providerDropdown.querySelector('.custom-dropdown-selected');
+
+					providerItems.forEach(item => {
+						if (item.dataset.value === provider) {
+							item.classList.add('selected');
+							providerSelected.querySelector('.custom-dropdown-icon').src = item.dataset.icon;
+							providerSelected.querySelector('.custom-dropdown-text').textContent = item.querySelector('span').textContent;
+						} else {
+							item.classList.remove('selected');
+						}
+					});
 					onSettingsProviderChange();
 				}
 

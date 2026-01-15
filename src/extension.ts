@@ -850,6 +850,11 @@ class ClaudeChatProvider {
 			case 'testAzureConnection':
 				this._testAzureConnection(message.endpoint, message.apiKey, message.deployment, message.apiVersion);
 				return;
+			case 'showDiffPreview':
+				this._showDiffPreview(message.code, message.language);
+				return;
+				this._testAzureConnection(message.endpoint, message.apiKey, message.deployment, message.apiVersion);
+				return;
 			case 'testDeepSeekConnection':
 				this._testDeepSeekConnection(message.apiKey, message.model);
 				return;
@@ -2607,11 +2612,26 @@ class ClaudeChatProvider {
 		const webview = this._panel?.webview || this._webview;
 
 		if (webview) {
-			// Create URI for the icon
+			// Create URIs for all icons
 			const iconUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'icon.png'));
+			const anthropicIconUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'media', 'claude-color.svg'));
+			const azureIconUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'media', 'azureai-color.svg'));
+			const deepseekIconUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'media', 'deepseek-color.svg'));
+			const grokIconUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'media', 'grok.svg'));
+			const newChatIconUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'media', 'new-chat.png'));
+			const historyIconUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'media', 'history.png'));
+			const settingsIconUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'media', 'settings.png'));
 
-			// Replace placeholder in HTML with actual icon URI
-			return html.replace('{{ICON_URI}}', iconUri.toString());
+			// Replace all placeholders in HTML with actual icon URIs
+			return html
+				.replace(/\{\{ICON_URI\}\}/g, iconUri.toString())
+				.replace(/\{\{ANTHROPIC_ICON\}\}/g, anthropicIconUri.toString())
+				.replace(/\{\{AZURE_ICON\}\}/g, azureIconUri.toString())
+				.replace(/\{\{DEEPSEEK_ICON\}\}/g, deepseekIconUri.toString())
+				.replace(/\{\{GROK_ICON\}\}/g, grokIconUri.toString())
+				.replace(/\{\{NEW_CHAT_ICON\}\}/g, newChatIconUri.toString())
+				.replace(/\{\{HISTORY_ICON\}\}/g, historyIconUri.toString())
+				.replace(/\{\{SETTINGS_ICON\}\}/g, settingsIconUri.toString());
 		}
 
 		return html;
@@ -3255,6 +3275,66 @@ Created by Code Pilot AI
 		} catch (error: any) {
 			console.error('Error creating new rule:', error);
 			vscode.window.showErrorMessage(`Failed to create new rule: ${error.message}`);
+		}
+	}
+
+	private async _showDiffPreview(code: string, language: string) {
+		const editor = vscode.window.activeTextEditor;
+		if (!editor) {
+			const action = await vscode.window.showInformationMessage(
+				'No file is currently open. Would you like to create a new file?',
+				'Create New File',
+				'Cancel'
+			);
+			if (action === 'Create New File') {
+				const doc = await vscode.workspace.openTextDocument({ content: code, language });
+				await vscode.window.showTextDocument(doc);
+			}
+			return;
+		}
+
+		const currentContent = editor.document.getText();
+		const fileName = path.basename(editor.document.fileName);
+
+		const action = await vscode.window.showInformationMessage(
+			`Apply code changes to ${fileName}?`,
+			{ modal: true, detail: 'This will replace the current file content with the new code.' },
+			'Show Diff',
+			'Apply',
+			'Cancel'
+		);
+
+		if (action === 'Show Diff') {
+			const originalDoc = await vscode.workspace.openTextDocument({ content: currentContent, language: editor.document.languageId });
+			const modifiedDoc = await vscode.workspace.openTextDocument({ content: code, language: editor.document.languageId });
+			
+			await vscode.commands.executeCommand('vscode.diff', originalDoc.uri, modifiedDoc.uri, `${fileName}: Current ↔ Proposed`);
+			
+			const applyAfterDiff = await vscode.window.showInformationMessage(
+				'Apply these changes?',
+				'Apply',
+				'Cancel'
+			);
+			
+			if (applyAfterDiff === 'Apply') {
+				const edit = new vscode.WorkspaceEdit();
+				const fullRange = new vscode.Range(
+					editor.document.positionAt(0),
+					editor.document.positionAt(currentContent.length)
+				);
+				edit.replace(editor.document.uri, fullRange, code);
+				await vscode.workspace.applyEdit(edit);
+				vscode.window.showInformationMessage('Code applied successfully!');
+			}
+		} else if (action === 'Apply') {
+			const edit = new vscode.WorkspaceEdit();
+			const fullRange = new vscode.Range(
+				editor.document.positionAt(0),
+				editor.document.positionAt(currentContent.length)
+			);
+			edit.replace(editor.document.uri, fullRange, code);
+			await vscode.workspace.applyEdit(edit);
+			vscode.window.showInformationMessage('Code applied successfully!');
 		}
 	}
 
