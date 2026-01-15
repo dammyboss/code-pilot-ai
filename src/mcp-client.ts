@@ -602,29 +602,39 @@ export class MCPClient {
         });
 
         if (format === 'anthropic') {
-            return mcpTools.map(tool => ({
-                name: `mcp_${tool.sanitizedServerName}_${tool.sanitizedToolName}`,
-                description: `[MCP: ${tool.serverName}] ${tool.description}`,
-                input_schema: this.sanitizeSchema(tool.inputSchema)
-            }));
-        } else {
-            return mcpTools.map(tool => ({
-                type: 'function',
-                function: {
-                    name: `mcp_${tool.sanitizedServerName}_${tool.sanitizedToolName}`,
+            return mcpTools.map(tool => {
+                const fullName = `mcp_${tool.sanitizedServerName}_${tool.sanitizedToolName}`;
+                const truncatedName = fullName.length > 64 ? fullName.substring(0, 64) : fullName;
+                return {
+                    name: truncatedName,
                     description: `[MCP: ${tool.serverName}] ${tool.description}`,
-                    parameters: this.sanitizeSchema(tool.inputSchema)
-                }
-            }));
+                    input_schema: this.sanitizeSchema(tool.inputSchema)
+                };
+            });
+        } else {
+            return mcpTools.map(tool => {
+                const fullName = `mcp_${tool.sanitizedServerName}_${tool.sanitizedToolName}`;
+                const truncatedName = fullName.length > 64 ? fullName.substring(0, 64) : fullName;
+                return {
+                    type: 'function',
+                    function: {
+                        name: truncatedName,
+                        description: `[MCP: ${tool.serverName}] ${tool.description}`,
+                        parameters: this.sanitizeSchema(tool.inputSchema)
+                    }
+                };
+            });
         }
     }
 
     async callTool(fullToolName: string, args: any): Promise<{ success: boolean; result: string; error?: string }> {
         // Find the tool in our list to get the original server name
         const allTools = this.getAllTools();
-        const tool = allTools.find(t =>
-            fullToolName === `mcp_${t.sanitizedServerName}_${t.sanitizedToolName}`
-        );
+        const tool = allTools.find(t => {
+            const fullName = `mcp_${t.sanitizedServerName}_${t.sanitizedToolName}`;
+            const truncatedName = fullName.length > 64 ? fullName.substring(0, 64) : fullName;
+            return fullToolName === truncatedName;
+        });
 
         if (!tool) {
             return { success: false, result: '', error: `MCP tool not found: ${fullToolName}` };
