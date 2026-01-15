@@ -680,10 +680,14 @@ class ClaudeChatProvider {
 			this._loadConversationHistory(latestConversation.filename);
 		}
 
-		// Send ready message immediately
+		// Restore state when panel is shown
 		setTimeout(() => {
-			// If no conversation to load, send ready immediately
-			if (!latestConversation) {
+			if (latestConversation) {
+				this._loadConversationHistory(latestConversation.filename);
+			} else if (this._currentConversation.length > 0) {
+				// Restore in-memory conversation
+				this._restoreWebviewState();
+			} else {
 				this._sendReadyMessage();
 			}
 		}, 100);
@@ -896,8 +900,10 @@ class ClaudeChatProvider {
 
 		this._setupWebviewMessageHandler(this._webview);
 
-		// Initialize the webview
-		this._initializeWebview();
+		// Restore state when webview is shown
+		setTimeout(() => {
+			this._restoreWebviewState();
+		}, 100);
 	}
 
 	private _initializeWebview() {
@@ -916,13 +922,43 @@ class ClaudeChatProvider {
 		}
 	}
 
+	private _restoreWebviewState() {
+		// Restore conversation if we have one in memory
+		if (this._currentConversation.length > 0) {
+			// Send all messages to recreate the conversation
+			for (const message of this._currentConversation) {
+				this._postMessage({
+					type: message.messageType,
+					data: message.data
+				});
+			}
+
+			// Send updated totals
+			this._postMessage({
+				type: 'updateTotals',
+				data: {
+					totalCost: this._totalCost,
+					totalTokensInput: this._totalTokensInput,
+					totalTokensOutput: this._totalTokensOutput,
+					requestCount: this._requestCount
+				}
+			});
+		}
+
+		// Always send ready message and settings
+		this._sendReadyMessage();
+	}
+
 	public reinitializeWebview() {
 		// Only reinitialize if we have a webview (sidebar)
 		if (this._webview) {
 			this._initializePermissions();
-			this._initializeWebview();
 			// Set up message handler for the webview
 			this._setupWebviewMessageHandler(this._webview);
+			// Restore state instead of initializing fresh
+			setTimeout(() => {
+				this._restoreWebviewState();
+			}, 100);
 		}
 	}
 
